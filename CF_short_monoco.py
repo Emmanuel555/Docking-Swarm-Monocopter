@@ -8,7 +8,6 @@ import time
 
 import Mocap
 import DataSave
-#import Foam_Data_process as Data_process
 import Data_process
 
 import math
@@ -16,8 +15,7 @@ from pyrr import quaternion
 import numpy as np
 import numpy.linalg as la
 
-#import monoco_att_ctrl
-import soft_monoco_att_ctrl as monoco_att_ctrl
+import monoco_att_ctrl
 import trajectory_generator
 import timeit
 from pynput import keyboard
@@ -104,9 +102,10 @@ def transmitter_calibration():
     a2 = joystick.get_axis(2)  # thrust
     a3 = joystick.get_axis(3)
 
-    button0 = joystick.get_button(0)
-    button1 = joystick.get_button(1)
-
+    button0 = round(joystick.get_axis(5))
+    button1 = round(joystick.get_axis(6))
+    button2 = round(joystick.get_axis(4))
+    
     # thrust from control pad
     conPad = int((a2 - highest) * rate)
 
@@ -122,9 +121,15 @@ def transmitter_calibration():
     else:
         enable = 1
 
-    cmd = conPad*enable*button0
+    cmd = conPad*enable*button0 # thrust
+    manual_thrust = conPad*enable*button0
 
-    return (cmd, button0, button1, a0, a1, enable)
+    if cmd != 0:
+        cmd = cmd/(65500/2)
+    #print(f"Joystick_axes available: {joystick.get_numaxes()}")
+
+    return (cmd, button0, button1, a0, a1, enable, conPad, button2, manual_thrust)
+
 
 
 def p_control_input(linear_pos,kp,kv,ki,ref_pos,dt):
@@ -134,6 +139,17 @@ def p_control_input(linear_pos,kp,kv,ki,ref_pos,dt):
     control_y = kp[1]*(ref_pos[1] - linear_pos[1]) - kv[1]*(linear_pos[4]) + ki[1]*(ref_pos[1] - linear_pos[1])*dt
     control_z = 1.0
 
+    cmd = np.array([control_x, control_y, control_z])  # roll, pitch, yawrate, thrust
+    return (cmd) 
+
+
+def ref_manual_ctrl(a0,a1,alt):
+    control_x = a0
+    control_y = a1
+    #control_z = 1.0
+    control_z = alt # to include in MPC?
+
+    #cmd = np.array([d_x_pad, d_y_pad, d_z_pad])  # roll, pitch, yawrate, thrust
     cmd = np.array([control_x, control_y, control_z])  # roll, pitch, yawrate, thrust
     return (cmd) 
     
@@ -218,9 +234,10 @@ def log_async(scf, logconf):
 
 if __name__ == '__main__':
 
+    stage = 'manual'
 
     # Setup keyboard listener
-    stage = 'hover'
+    """ stage = 'hover'
     def on_press(key):
         global stage
         try:
@@ -235,7 +252,7 @@ if __name__ == '__main__':
 
     # Start listening for key presses
     listener = keyboard.Listener(on_press=on_press)
-    listener.start()
+    listener.start() """
 
 
     data_receiver_sender = Mocap.Udp()
@@ -247,10 +264,13 @@ if __name__ == '__main__':
     #data_saver = DataSave.SaveData('Data_time',
     #                               'Monocopter_XYZ','ref_position','rmse_num_xyz','final_rmse','ref_msg','status','cmd','tpp_angle')
 
+    #data_saver = DataSave.SaveData('Data_time',
+    #                               'Monocopter_XYZ','motor_cmd','ref_position','tpp_roll','tpp_pitch','body_yaw_deg','tpp_omega','tpp_omega_dot','body_angle_roll',
+    #                               'rmse_num_xyz','att_error','att_rate_error','att_raterate_error','yawrate')   
+
     data_saver = DataSave.SaveData('Data_time',
-                                   'Monocopter_XYZ','motor_cmd','ref_position','tpp_roll','tpp_pitch','body_yaw_deg','tpp_omega','tpp_omega_dot','body_angle_roll',
-                                   'rmse_num_xyz','att_error','att_rate_error','att_raterate_error','yawrate')   
-              
+                                   'Monocopter_XYZ','rotational_state_vector','motor_cmd','ref_position','ref_velocity','motor_actual_cmd','cmd_bod_acc','yawrate') 
+                
                                    
     logging.basicConfig(level=logging.ERROR)
     cflib.crtp.init_drivers()
@@ -305,9 +325,9 @@ if __name__ == '__main__':
 
 
     # cyclic xyz (position)
-    kp = [0.05,0.05,0.0] # 0.04
+    kp = [1.3,1.3,0.0] # 0.04
     kd = [0.0005,0.0005,0.0] # not in use
-    ki = [0.0,0.0,0.0] 
+    ki = [10.0,10.0,0.0] 
 
 
     # cyclic xyz (velocity)
@@ -315,8 +335,8 @@ if __name__ == '__main__':
     
 
     # cyclic xy (attitude) - heuristic gains thus far
-    ka = [3000, 3000]  # 6000
-    kr = [40.0, 40.0] # 10
+    ka = [6000, 6000]  # 6000
+    kr = [10.0, 10.0] # 10
     krr = [1.0, 1.0] # 1.0
    
 
@@ -365,7 +385,7 @@ if __name__ == '__main__':
 
 
     # circle parameters
-    radius = 1.0 # 0.5
+    radius = 0.5 # 0.5
     speedX = 5.0 # 0.5 m/s the best thus far
     laps = 5
     leminiscate_laps = 4
@@ -380,14 +400,18 @@ if __name__ == '__main__':
     traj_gen = trajectory_generator.trajectory_generator()
     ## traj generator for min snap circle, ####### pre computed points
     ## 2 pt line
+    #chosen_traj = "_2_pt_line_"
     #pva,num_pts = traj_gen.two_pt_line(speedX, max_sample_rate/pid_loop, alt)
     ## circle
+    chosen_traj = "_circle_"
     pva,num_pts = traj_gen.compute_jerk_snap_9pt_circle_x_laps(x_offset, y_offset, radius, speedX, max_sample_rate/pid_loop, laps, reverse_cw, alt) # mechanical limit for monocopter is 0.5m/s
     ## lemniscate
+    #chosen_traj = "_lemniscate_"
     #pva,num_pts = traj_gen.lemniscate(x_offset, y_offset, leminiscate_laps, leminiscate_radius, max_sample_rate/pid_loop, reverse_cw, speedX, alt)
     ## helix
     #pva,num_pts = traj_gen.compute_jerk_snap_9pt_helix_x_laps(x_offset, y_offset, radius, speedX, max_sample_rate/pid_loop,helix_laps,reverse_cw,alt)
     ## elevated circle
+    #chosen_traj = "_elevated_circle_"
     #pva,num_pts = traj_gen.compute_jerk_snap_9pt_elevated_circle_x_laps(x_offset, y_offset, radius, speedX, max_sample_rate/pid_loop,laps,reverse_cw,elevated_alt)
 
 
@@ -436,28 +460,30 @@ if __name__ == '__main__':
                 # update positions etc.
                 monoco.update(linear_state_vector, rotational_state_vector, tpp_quat[0], dt, z_offset, body_yaw, tpp_quat[1], tpp_quat[2], yawrate)
 
+                # update from transmitter
                 tx_cmds = transmitter_calibration()  # get the joystick commands
-                manual_thrust = tx_cmds[0]  # thrust command
+                manual_alt = tx_cmds[0]  # thrust command
                 button0 = tx_cmds[1]
                 button1 = tx_cmds[2]
                 enable = tx_cmds[5]
+                conPad = tx_cmds[6]
+                button2 = tx_cmds[7]
+                manual_thrust = tx_cmds[8]
 
-                a0 = tx_cmds[3]     
-                a1 = tx_cmds[4]
-                af = 80 # aggression factor
+                a0 = tx_cmds[3] # x     
+                a1 = tx_cmds[4] # y
 
+                ## update references for manual control
+                manual_cyclic = ref_manual_ctrl(a0, a1, manual_alt) # manual position control 
 
                 # update references for PID position loop
                 if loop_counter % pid_loop == 0:
-                
-
-                    # update references for PID loop 
-                    manual_cyclic = att_manual_ctrl(a0, a1, af) # manual position control 
-                    
-                    if button1 == 1:
+            
+                    if button2 == 1:
 
                         ## hovering test
-                        if stage == 'hover':
+                        if button1 == 0:
+                            stage = 'hover'
                             ref = traj_gen.hover_test(x_hover_offset,y_hover_offset,z_hover_offset)
                             hovering_ff = np.array([0.0, 0.0, 0.0])
                             ref_pos = ref[0]
@@ -471,7 +497,8 @@ if __name__ == '__main__':
 
 
                         ## trajectory inputs
-                        if stage == 'trajectory on':
+                        elif button1 == 1:
+                            stage = 'trajectory on'
                             ref_derivatives = traj_gen.jerk_snap_circle(pva,num_pts,count,alt)
                             ref_pos = ref_derivatives[0]
                             ref_pos_z = ref_pos[2]
@@ -486,7 +513,8 @@ if __name__ == '__main__':
 
 
                         ## landing 
-                        if stage == 'land':
+                        elif button1 == -1:
+                            stage = 'land'
                             ref = traj_gen.hover_test(x_land_offset,y_land_offset,z_land_offset)
                             hovering_ff = np.array([0.0, 0.0, 0.0])
                             ref_pos = ref[0]
@@ -505,8 +533,25 @@ if __name__ == '__main__':
                         monoco.p_control_input_manual(auto_cyclic)
                         monoco.v_control_input()
                     else:
-                        monoco.p_control_input_manual(manual_cyclic) # update the manual cyclic inputs
-                        #monoco.v_control_input()
+                        
+                        stage = 'manual'
+                        ref = traj_gen.hover_test(manual_cyclic[0],manual_cyclic[1],manual_cyclic[2])
+                        hovering_ff = np.array([0.0, 0.0, 0.0])
+                        ref_pos = ref[0]
+                        ref_pos_z = ref_pos[2]
+                        ref_vel = hovering_ff
+                        ref_acc = hovering_ff
+                        ref_jerk = hovering_ff
+                        ref_snap = hovering_ff
+                        ref_msg = ref[1]
+                        count = 0
+
+                         # ff references
+                        monoco.linear_ref(ref_pos,ref_vel,ref_acc,ref_jerk,ref_snap,ref_pos_z)
+                        # p control
+                        auto_cyclic = p_control_input(linear_state_vector, kp, kvp, ki, ref_pos, sample_time) # auto position control
+                        monoco.p_control_input_manual(auto_cyclic)
+                        monoco.v_control_input()
 
                     
                 if loop_counter % att_loop == 0:
@@ -524,14 +569,9 @@ if __name__ == '__main__':
 
 
                 # collective thrust (alt hold)
-                if button1 == 1:
-                    z_controls = monoco.collective_thrust(apz,adz,aiz) # full z alt hold
-                    collective_thrust = z_controls[0]*enable*button0
-                else:    
-                    z_controls = monoco.manual_collective_thrust(kpz,kdz,kiz,manual_thrust)
-                    collective_thrust = z_controls[0]*enable*button0
-
-
+                z_controls = monoco.collective_thrust(apz,adz,aiz) # full z alt hold
+                collective_thrust = z_controls[0]*enable*button0
+                
                 # from att ctrl
                 cmd_bod_acc = monoco.CF_SAM_get_angles_and_thrust(enable,flatness_option)
                 att_raterate_error = monoco.attitude_raterate_error
@@ -588,10 +628,12 @@ if __name__ == '__main__':
                         rmse_num_z = rmse_num_z + (x_error )**2
                         rmse_num = [x_error,y_error,z_error,rmse_num_x,rmse_num_y,rmse_num_z]
                         
-                        data_saver.add_item(abs_time,
-                                    linear_state_vector[0:3],motor_cmd,ref_pos,round((tpp_angle[0]*(180/np.pi)),3),round((tpp_angle[1]*(180/np.pi)),3),round(body_yaw*(180/np.pi),2),tpp_omega,tpp_omega_dot,bod_angle_roll,
-                                    rmse_num,att_error,att_rate_error,att_raterate_error,yawrate)   
+                        #data_saver.add_item(abs_time,
+                        #            linear_state_vector[0:3],motor_cmd,ref_pos,round((tpp_angle[0]*(180/np.pi)),3),round((tpp_angle[1]*(180/np.pi)),3),round(body_yaw*(180/np.pi),2),tpp_omega,tpp_omega_dot,bod_angle_roll,
+                        #            rmse_num,att_error,att_rate_error,att_raterate_error,yawrate)   
                         
+                        data_saver.add_item(abs_time,linear_state_vector[0:6],rotational_state_vector,motor_cmd,ref_pos,ref_vel,motor_cmd,cmd_bod_acc,yawrate) 
+
                     
 
         except KeyboardInterrupt:  
@@ -607,8 +649,8 @@ if __name__ == '__main__':
             #print('Emergency Stopped and final rmse produced: ', rmse_num )
             
                     
+monoco_name = 'short'
 
 # save data
-#path = '/home/emmanuel/Monocopter-OCP/cf_robot_solo/0.5lemniscate_short_att'
+#path = '/home/emmanuel/Monocopter-OCP/DFBC/fan_DFBC_' + monoco_name + chosen_traj + str(speedX*0.1) + '_ms'
 #data_saver.save_data(path)
-
