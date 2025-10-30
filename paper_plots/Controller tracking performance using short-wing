@@ -1,0 +1,17 @@
+short_traj_data
+Aggregated XYZ L2 norm error over circle, elevated, and lemniscate: 
+Paper mean:
+INDI 0.3m/s 0.25,0.18,0.09
+NDI 0.3m/s 0.16,0.16,0.09
+ATT 0.3m/s 0.83,0.83,0.08
+INDI 0.5m/s 0.54,0.48,0.08
+NDI 0.5m/s 0.61,0.51,0.08
+ATT 0.5m/s 0.80,0.80,0.08
+
+Paper stddev:
+INDI 0.3m/s 0.16,0.10,0.00
+NDI 0.3m/s 0.08,0.09,0.00
+ATT 0.3m/s 0.13,0.09,0.00
+INDI 0.5m/s 0.02,0.04,0.01
+NDI 0.5m/s 0.02,0.04,0.01
+ATT 0.5m/s 0.02,0.13,0.01
