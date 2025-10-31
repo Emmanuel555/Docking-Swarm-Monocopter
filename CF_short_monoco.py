@@ -400,11 +400,11 @@ if __name__ == '__main__':
     traj_gen = trajectory_generator.trajectory_generator()
     ## traj generator for min snap circle, ####### pre computed points
     ## 2 pt line
-    #chosen_traj = "_2_pt_line_"
-    #pva,num_pts = traj_gen.two_pt_line(speedX, max_sample_rate/pid_loop, alt)
+    chosen_traj = "_2_pt_line_"
+    pva,num_pts = traj_gen.two_pt_line(speedX, max_sample_rate/pid_loop, alt)
     ## circle
-    chosen_traj = "_circle_"
-    pva,num_pts = traj_gen.compute_jerk_snap_9pt_circle_x_laps(x_offset, y_offset, radius, speedX, max_sample_rate/pid_loop, laps, reverse_cw, alt) # mechanical limit for monocopter is 0.5m/s
+    #chosen_traj = "_circle_"
+    #pva,num_pts = traj_gen.compute_jerk_snap_9pt_circle_x_laps(x_offset, y_offset, radius, speedX, max_sample_rate/pid_loop, laps, reverse_cw, alt) # mechanical limit for monocopter is 0.5m/s
     ## lemniscate
     #chosen_traj = "_lemniscate_"
     #pva,num_pts = traj_gen.lemniscate(x_offset, y_offset, leminiscate_laps, leminiscate_radius, max_sample_rate/pid_loop, reverse_cw, speedX, alt)
@@ -596,16 +596,18 @@ if __name__ == '__main__':
 
 
                 if loop_counter % 10 == 0:
-                    print('cmd and button commands: ', motor_cmd, button0, button1)
+                    #print('cmd and button commands: ', motor_cmd, button0, button1)
+                    print('direction: ', a0, a1, manual_alt)
                     print(ref_msg) 
+                    print("ref:", ref_pos)
                     #print('tx commands: ', a0, a1)
-                    #print('tpp_position', linear_state_vector[0], linear_state_vector[1], linear_state_vector[2])
-                    print('altitude: ', linear_state_vector[2])
+                    print('tpp_position', linear_state_vector[0], linear_state_vector[1], linear_state_vector[2])
+                    #print('altitude: ', linear_state_vector[2])
                     #print('manual_cyclic_xyz: ', auto_cyclic)
                     #print('p_cyclic_xyz: ', monoco.p_control_signal)
                     print('att_cmds: ', cmd_bod_acc)
-                    print('monoco.rates comparison: ', monoco.cmd_bod_rates_final, monoco.ref_rates)
-                    print('monoco.raterates comparison: ', monoco.cmd_bod_raterates_final, monoco.ref_raterates)
+                    #print('monoco.rates comparison: ', monoco.cmd_bod_rates_final, monoco.ref_rates)
+                    #print('monoco.raterates comparison: ', monoco.cmd_bod_raterates_final, monoco.ref_raterates)
                     #print('yawrate: ', yawrate)
 
                     if dt > 0.0:
