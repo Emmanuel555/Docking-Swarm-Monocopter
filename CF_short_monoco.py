@@ -336,7 +336,7 @@ if __name__ == '__main__':
 
     # cyclic xy (attitude) - heuristic gains thus far
     ka = [6000, 6000]  # 6000
-    kr = [10.0, 10.0] # 10
+    kr = [5.0, 5.0] # 10
     krr = [1.0, 1.0] # 1.0
    
 
@@ -385,7 +385,7 @@ if __name__ == '__main__':
 
 
     # circle parameters
-    radius = 0.5 # 0.5
+    radius = 0.75 # 0.5
     speedX = 5.0 # 0.5 m/s the best thus far
     laps = 5
     leminiscate_laps = 4
@@ -400,11 +400,11 @@ if __name__ == '__main__':
     traj_gen = trajectory_generator.trajectory_generator()
     ## traj generator for min snap circle, ####### pre computed points
     ## 2 pt line
-    chosen_traj = "_2_pt_line_"
-    pva,num_pts = traj_gen.two_pt_line(speedX, max_sample_rate/pid_loop, alt)
+    #chosen_traj = "_2_pt_line_"
+    #pva,num_pts = traj_gen.two_pt_line(speedX, max_sample_rate/pid_loop, alt)
     ## circle
-    #chosen_traj = "_circle_"
-    #pva,num_pts = traj_gen.compute_jerk_snap_9pt_circle_x_laps(x_offset, y_offset, radius, speedX, max_sample_rate/pid_loop, laps, reverse_cw, alt) # mechanical limit for monocopter is 0.5m/s
+    chosen_traj = "_circle_"
+    pva,num_pts = traj_gen.compute_jerk_snap_9pt_circle_x_laps(x_offset, y_offset, radius, speedX, max_sample_rate/pid_loop, laps, reverse_cw, alt) # mechanical limit for monocopter is 0.5m/s
     ## lemniscate
     #chosen_traj = "_lemniscate_"
     #pva,num_pts = traj_gen.lemniscate(x_offset, y_offset, leminiscate_laps, leminiscate_radius, max_sample_rate/pid_loop, reverse_cw, speedX, alt)
