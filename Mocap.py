@@ -17,7 +17,24 @@ class Udp(object):
         self.sample_rate = self.get_sample_rate()
         self.sample_time = 1 / self.sample_rate
 
+
     def get_sample_rate(self):
+        if self.sample_rate_flag == -1:
+            print('computing sample rate..')
+            time_list = []
+            for i in range(100): # get 1000 sample
+                time_list.append(time.time())
+                data, addr = self.sock_rx.recvfrom(14)  # ubuntu set the buffer size to 14 for one vehicle, 42 for 3 vehicles
+                #data, addr = self.sock_rx.recvfrom(28) 
+            dtime = np.diff(time_list)
+            sample_time = np.mean(dtime)
+            print('Sample rate: %.2f' % (1/sample_time), 'Hz')
+            return 1/sample_time
+        else:
+            return self.sample_rate
+        
+
+    def get_sample_rate_swarm(self):
         if self.sample_rate_flag == -1:
             print('computing sample rate..')
             time_list = []
@@ -31,16 +48,26 @@ class Udp(object):
             return 1/sample_time
         else:
             return self.sample_rate
+            
 
     # def udp_step(self):
     #     udp_data, addr = self.sock.recvfrom(100)  # buffer size is 8192 bytes
     #     return udp_data
 
+
     def get_data(self):
+        #udp_data, addr = self.sock_rx.recvfrom(42)
+        #udp_data, addr = self.sock_rx.recvfrom(28) # each h is 2 bytes, 14 * 2 is 28 bytes = total size for 14 variables 
+        udp_data, addr = self.sock_rx.recvfrom(14) # ubuntu is very exact with this number, 7*2, 7*2*3
+        return udp_data
+    
+
+    def get_data_swarm(self):
         #udp_data, addr = self.sock_rx.recvfrom(42)
         udp_data, addr = self.sock_rx.recvfrom(28) # each h is 2 bytes, 14 * 2 is 28 bytes = total size for 14 variables 
         #udp_data, addr = self.sock_rx.recvfrom(14) # ubuntu is very exact with this number, 7*2, 7*2*3
         return udp_data
+
     
     def send_data(self, UDP_IP, UDP_PORT, data): # data is a byte array
         #UDP_IP = "127.0.0.1"

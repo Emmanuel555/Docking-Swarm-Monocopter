@@ -8,7 +8,7 @@ import time
 
 import Mocap
 import DataSave
-import Data_process_swarm
+import old_Data_process_swarm
 
 import math
 from pyrr import quaternion
@@ -71,7 +71,7 @@ if __name__ == '__main__':
     data_receiver = Mocap.Udp()
     sample_rate = data_receiver.get_sample_rate()
     sample_time = 1 / sample_rate
-    data_processor = Data_process_swarm.RealTimeProcessor(5, [16], 'lowpass', 'cheby2', 85, sample_rate)
+    data_processor = old_Data_process_swarm.RealTimeProcessor(5, [16], 'lowpass', 'cheby2', 85, sample_rate)
 
     data_saver = DataSave.SaveData('Data_time',
                                    'robot_1','ref_position')
