@@ -346,7 +346,7 @@ if __name__ == '__main__':
 
 
     # cyclic xyz (position) short wing
-    kp_2 = [1.3,1.3,0.0] # 0.04
+    kp_2 = [1.5,1.5,0.0] # 0.04
     kd_2 = [0.0005,0.0005,0.0] # not in use
     ki_2 = [10.0,10.0,0.0] 
 
@@ -357,7 +357,7 @@ if __name__ == '__main__':
 
     # cyclic xy (attitude) - heuristic gains thus far
     ka = [6000, 6000]  # 6000
-    kr = [5.0, 5.0] # 10
+    kr = [2.8, 2.8] # 10
     krr = [1.0, 1.0] # 1.0
    
 
@@ -442,10 +442,10 @@ if __name__ == '__main__':
     with Swarm(uris, factory= CachedCfFactory(rw_cache='./cache')) as swarm:
         #swarm.reset_estimators()
         cmd_att_startup = np.array([0, 0, 0, 0]) # init setpt to 0 0 0 0
-        cmd_att = np.array([cmd_att_startup])
-        data_log = logging_config()
-        swarm_log = np.array([data_log])
-        seq_args_log = swarm_logging(swarm_log)
+        cmd_att = np.array([cmd_att_startup,cmd_att_startup])
+        #data_log = logging_config()
+        #swarm_log = np.array([data_log,data_log])
+        #seq_args_log = swarm_logging(swarm_log)
         seq_args = swarm_exe(cmd_att)
         swarm.parallel(init_throttle, args_dict=seq_args)
         #swarm.parallel(log_async, args_dict=seq_args_log) # only can log up to six items at a time
@@ -460,8 +460,8 @@ if __name__ == '__main__':
                 data = data_receiver_sender.get_data_swarm()
 
                 # swarm data unpack
-                data_processor_1.data_unpack_filtered(data) # long wing
-                data_processor_2.data_unpack_filtered(data) # short wing 
+                data_processor_1.data_unpack_filtered(data,1) # long wing
+                data_processor_2.data_unpack_filtered(data,2) # short wing 
 
                 ## processed tpp data/feedback
 
@@ -524,8 +524,8 @@ if __name__ == '__main__':
                 a1 = tx_cmds[4] # y
 
                 ## update references for manual control
-                manual_cyclic_1 = ref_manual_ctrl(a0, a1, manual_alt, 1.0, 0.5) # manual position control for long wing 
-                manual_cyclic_2 = ref_manual_ctrl(a0, a1, manual_alt, -0.5, 0.0) # manual position control for short wing
+                manual_cyclic_1 = ref_manual_ctrl(a0, a1, manual_alt, 1.0, 0.0) # manual position control for long wing 
+                manual_cyclic_2 = ref_manual_ctrl(a0, a1, manual_alt, -1.0, 0.0) # manual position control for short wing
                 manual_cyclic_2_auto = ref_manual_ctrl(a0, a1, manual_alt, 0.0, 0.0) # manual position control for short wing
 
                 # update references for PID position loop
@@ -697,8 +697,9 @@ if __name__ == '__main__':
                     motor_cmd_1 = 65500
                 elif motor_cmd_1 < 10:
                     motor_cmd_1 = 10
-                final_cmd_1 = np.array([motor_cmd_1, motor_cmd_1, motor_cmd_1, motor_cmd_1]) # e.g 
-                
+                #final_cmd_1 = np.array([motor_cmd_1, motor_cmd_1, motor_cmd_1, motor_cmd_1]) # e.g 
+                final_cmd_1 = np.array([0, 0, 0, 0]) # e.g 
+
                 # short wing
                 motor_cmd_2 = collective_thrust_2 + int(cyclic_2)*button0
                 # motor saturation - manual thrust
@@ -706,8 +707,8 @@ if __name__ == '__main__':
                     motor_cmd_2 = 65500
                 elif motor_cmd_2 < 10:
                     motor_cmd_2 = 10
-                #final_cmd_2 = np.array([motor_cmd_2, motor_cmd_2, motor_cmd_2, motor_cmd_2]) # e.g 
-                final_cmd_2 = np.array([0, 0, 0, 0]) # e.g     
+                final_cmd_2 = np.array([motor_cmd_2, motor_cmd_2, motor_cmd_2, motor_cmd_2]) # e.g 
+                #final_cmd_2 = np.array([0, 0, 0, 0]) # e.g     
 
 
                 final_cmd = np.array([final_cmd_1,final_cmd_2])

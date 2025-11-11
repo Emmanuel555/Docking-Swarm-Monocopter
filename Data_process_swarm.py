@@ -199,7 +199,7 @@ class RealTimeProcessor(object):
         self.filted_data = [self.px_filted, self.py_filted, self.pz_filted, self.quat_x_filted, self.quat_y_filted, self.quat_z_filted, self.quat_w_filted]
 
 
-    def data_unpack_filtered(self,udp_data, number):
+    def data_unpack_filtered(self, udp_data, number):
         x, y, z, qx, qy, qz, qw, x1, y1, z1, qx1, qy1, qz1, qw1, = struct.unpack("hhhhhhhhhhhhhh", udp_data) # h refers to python type integer of byte size 2
         
         if number == 2:

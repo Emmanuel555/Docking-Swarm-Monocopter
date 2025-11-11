@@ -31,7 +31,7 @@ from cflib.crazyflie.syncLogger import SyncLogger
 # Change uris and sequences according to your setup
 
 # monoco radio 1
-URI1 = 'radio://0/80/2M/E7E7E7E701'
+URI1 = 'radio://0/80/2M/E7E7E7E702'
 
 
 uris = {
@@ -325,7 +325,7 @@ if __name__ == '__main__':
 
 
     # cyclic xyz (position)
-    kp = [1.3,1.3,0.0] # 0.04
+    kp = [1.5,1.5,0.0] # 0.04
     kd = [0.0005,0.0005,0.0] # not in use
     ki = [10.0,10.0,0.0] 
 
@@ -336,7 +336,7 @@ if __name__ == '__main__':
 
     # cyclic xy (attitude) - heuristic gains thus far
     ka = [6000, 6000]  # 6000
-    kr = [5.0, 5.0] # 10
+    kr = [2.8, 2.8] # 10
     krr = [1.0, 1.0] # 1.0
    
 
