@@ -346,7 +346,7 @@ if __name__ == '__main__':
 
 
     # cyclic xyz (position) short wing
-    kp_2 = [1.5,1.5,0.0] # 0.04
+    kp_2 = [1.3,1.3,0.0] # 0.04
     kd_2 = [0.0005,0.0005,0.0] # not in use
     ki_2 = [10.0,10.0,0.0] 
 
@@ -526,7 +526,7 @@ if __name__ == '__main__':
                 a1 = tx_cmds[4] # y
 
                 ## update references for manual control
-                manual_cyclic_1 = ref_manual_ctrl(a0, a1, manual_alt, 1.0, 0.0) # manual position control for long wing 
+                manual_cyclic_1 = ref_manual_ctrl(a0, a1, manual_alt, 1.0, 0.4) # manual position control for long wing 
                 manual_cyclic_2 = ref_manual_ctrl(a0, a1, manual_alt, -1.0, 0.0) # manual position control for short wing
                 manual_cyclic_2_auto = ref_manual_ctrl(a0, a1, manual_alt, 0.0, 0.0) # manual position control for short wing
 
@@ -699,8 +699,8 @@ if __name__ == '__main__':
                     motor_cmd_1 = 65500
                 elif motor_cmd_1 < 10:
                     motor_cmd_1 = 10
-                #cfinal_cmd_1 = np.array([motor_cmd_1, motor_cmd_1, motor_cmd_1, motor_cmd_1]) # e.g 
-                final_cmd_1 = np.array([0, 0, 0, 0]) # e.g 
+                final_cmd_1 = np.array([motor_cmd_1, motor_cmd_1, motor_cmd_1, motor_cmd_1]) # e.g 
+                #final_cmd_1 = np.array([0, 0, 0, 0]) # e.g 
 
                 # short wing
                 motor_cmd_2 = collective_thrust_2 + int(cyclic_2)*button0
