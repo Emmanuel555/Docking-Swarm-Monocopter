@@ -114,7 +114,8 @@ if __name__ == '__main__':
 
         #if count % 0.3 == 0:
         #print(f"Thrust: {manual_thrust}, X: {a0}, Y: {a1}, Enable: {enable}, Button0: {button0}, Button1: {button1}, ConPad: {conPad}, Button2: {button2}")     
-        conPad = 1000+((conPad/65500)*1000)
+        conPad = 1000+((conPad/65500)*1000) # for PWM
+        #conPad = conPad/65500 # for dshot
         print(f"ConPad: {conPad}")
 
         #how fast the loop goes at
@@ -125,10 +126,22 @@ if __name__ == '__main__':
         count += 1
 
         try:
-            pwm = int(conPad)
-            pwm = max(1000, min(2000, pwm))
+            ##pwm
+            pwm = float(conPad)
+            pwm = max(1000, min(2000, pwm)) # pwm
             sock.sendto((str(pwm) + "\n").encode(), (ESP32_IP, ESP32_PORT)) # hardcoded
             #sock.sendto((str(pwm) + "\n").encode(), esp32_addr) # auto
+
+            ##dshot
+            #dshot = float(conPad)
+            #pwm = max(1000, min(2000, pwm)) # pwm
+            #dshot = max(0, min(1.0, dshot)) # dshot
+            #print (str(button0) + "," + str(dshot))
+            #print(f"Sending: {str(button0)},{str(88)}")
+            #sock.sendto((str(button0) + "," + str(dshot) + "\n").encode(), (ESP32_IP, ESP32_PORT)) # hardcoded
+            #sock.sendto((str(pwm) + "\n").encode(), esp32_addr) # auto
+
+
         except ValueError:
             print("Invalid input, enter a number between 1000-2000")
 
