@@ -116,7 +116,7 @@ if __name__ == '__main__':
         #print(f"Thrust: {manual_thrust}, X: {a0}, Y: {a1}, Enable: {enable}, Button0: {button0}, Button1: {button1}, ConPad: {conPad}, Button2: {button2}")     
         conPad = 1000+((conPad/65500)*1000) # for PWM
         #conPad = conPad/65500 # for dshot
-        print(f"ConPad: {conPad}")
+        #print(f"ConPad: {conPad}")
 
         #how fast the loop goes at
         #print(f"dt: {dt}")
@@ -127,18 +127,19 @@ if __name__ == '__main__':
 
         try:
             ##pwm
-            pwm = float(conPad)
+            pwm = int(conPad)
             pwm = max(1000, min(2000, pwm)) # pwm
+            print(f"PWM: {pwm}")
             sock.sendto((str(pwm) + "\n").encode(), (ESP32_IP, ESP32_PORT)) # hardcoded
             #sock.sendto((str(pwm) + "\n").encode(), esp32_addr) # auto
 
             ##dshot
-            #dshot = float(conPad)
-            #pwm = max(1000, min(2000, pwm)) # pwm
-            #dshot = max(0, min(1.0, dshot)) # dshot
-            #print (str(button0) + "," + str(dshot))
-            #print(f"Sending: {str(button0)},{str(88)}")
-            #sock.sendto((str(button0) + "," + str(dshot) + "\n").encode(), (ESP32_IP, ESP32_PORT)) # hardcoded
+            """ dshot = float(conPad)
+            dshot = round(dshot,3)
+            dshot = max(0, min(1.0, dshot)) # dshot
+            print (str(button0) + "," + str(dshot))
+            sock.sendto((str(button0) + "," + str(dshot) + "\n").encode(), (ESP32_IP, ESP32_PORT)) # hardcoded
+             """
             #sock.sendto((str(pwm) + "\n").encode(), esp32_addr) # auto
 
 
