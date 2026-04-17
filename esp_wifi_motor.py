@@ -146,4 +146,4 @@ if __name__ == '__main__':
         except ValueError:
             print("Invalid input, enter a number between 1000-2000")
 
-        
+        time.sleep(0.01) 
