@@ -3,19 +3,25 @@ import threading
 import pygame
 import time
 import timeit
+import serial
 
 ESP32_IP = "192.168.1.108"
 ESP32_PORT = 5005
 
 PC_IP = "0.0.0.0"   # listen on all interfaces
 PC_PORT = 5005
-
-sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-sock.bind((PC_IP, PC_PORT))
-
-print(f"PC UDP listening on {PC_IP}:{PC_PORT}")
-
 esp32_addr = None
+
+# ESPNOW
+SERIAL_PORT = '/dev/ttyACM0'  # change to your port, Windows would be 'COM3' etc
+BAUD_RATE = 115200
+ser = serial.Serial(SERIAL_PORT, BAUD_RATE)
+
+
+""" sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+sock.bind((PC_IP, PC_PORT))
+print(f"PC UDP listening on {PC_IP}:{PC_PORT}") """
+
 
 def transmitter_calibration():
     for event in pygame.event.get():
@@ -99,7 +105,7 @@ if __name__ == '__main__':
         # joystick = pygame.joystick.Joystick(0) # added here to speed up loop
 
         ## update from transmitter
-        tx_cmds = transmitter_calibration()  # get the joystick commands
+        """ tx_cmds = transmitter_calibration()  # get the joystick commands
         manual_thrust = tx_cmds[0]  # thrust command
         button0 = tx_cmds[1]
         button1 = tx_cmds[2]
@@ -108,13 +114,14 @@ if __name__ == '__main__':
         button2 = tx_cmds[7]
 
         a0 = tx_cmds[3]     
-        a1 = tx_cmds[4]
+        a1 = tx_cmds[4] """
         #dt = now - last_time
         #last_time = now
 
         #if count % 0.3 == 0:
         #print(f"Thrust: {manual_thrust}, X: {a0}, Y: {a1}, Enable: {enable}, Button0: {button0}, Button1: {button1}, ConPad: {conPad}, Button2: {button2}")     
-        conPad = 1000+((conPad/65500)*1000) # for PWM
+        
+        #conPad = 1000+((conPad/65500)*1000) # for PWM
         #conPad = conPad/65500 # for dshot
         #print(f"ConPad: {conPad}")
 
@@ -127,10 +134,12 @@ if __name__ == '__main__':
 
         try:
             ##pwm
-            pwm = int(conPad)
-            pwm = max(1000, min(2000, pwm)) # pwm
-            print(f"PWM: {pwm}")
-            sock.sendto((str(pwm) + "\n").encode(), (ESP32_IP, ESP32_PORT)) # hardcoded
+            """ pwm = int(conPad)
+            pwm = max(1000, min(2000, pwm)) # pwm """
+            pwm = int(1200)
+            print(f"PWM: {pwm}, Update rate: {1/dt:.2f} Hz")
+            ser.write((str(pwm) + "\n").encode())
+            #sock.sendto((str(pwm) + "\n").encode(), (ESP32_IP, ESP32_PORT)) # hardcoded
             #sock.sendto((str(pwm) + "\n").encode(), esp32_addr) # auto
 
             ##dshot
@@ -146,4 +155,4 @@ if __name__ == '__main__':
         except ValueError:
             print("Invalid input, enter a number between 1000-2000")
 
-        time.sleep(0.01) 
+        time.sleep(1/100) 
