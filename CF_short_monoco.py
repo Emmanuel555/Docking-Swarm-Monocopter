@@ -84,14 +84,7 @@ def arm_throttle(scf, cmds):
         print("swarming error: ", e)
 
 
-def transmitter_calibration():
-    # where hand control comes
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            done = True
-
-    joystick = pygame.joystick.Joystick(0)
-    joystick.init()
+def transmitter_calibration(joystick):
     lowest = 0.97
     highest = -1
     range_js = -(highest - lowest)
@@ -278,6 +271,8 @@ if __name__ == '__main__':
     # Initialize the joysticks
     pygame.init()
     pygame.joystick.init()
+    joystick = pygame.joystick.Joystick(0)
+    joystick.init()
     done = False
     controllerEnable = False
     pad_speed = 1
@@ -429,6 +424,7 @@ if __name__ == '__main__':
         try:
             #while time_end > time.time():
             while True:
+                pygame.event.pump()  # lightweight, just processes events without blocking
                 start = timeit.default_timer() 
                 abs_time = time.time() - time_start
 
@@ -461,7 +457,7 @@ if __name__ == '__main__':
                 monoco.update(linear_state_vector, rotational_state_vector, tpp_quat[0], dt, z_offset, body_yaw, tpp_quat[1], tpp_quat[2], yawrate)
 
                 # update from transmitter
-                tx_cmds = transmitter_calibration()  # get the joystick commands
+                tx_cmds = transmitter_calibration(joystick)  # get the joystick commands
                 manual_alt = tx_cmds[0]  # thrust command
                 button0 = tx_cmds[1]
                 button1 = tx_cmds[2]
