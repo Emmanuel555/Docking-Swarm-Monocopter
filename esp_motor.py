@@ -85,6 +85,18 @@ if __name__ == '__main__':
     pygame.joystick.init()
     joystick = pygame.joystick.Joystick(0)
     joystick.init()
+
+    # warmup - run 50 iterations before starting
+    #print("Warming up...")
+    for _ in range(50):
+        pygame.event.pump()
+        joystick.get_axis(0)
+        joystick.get_axis(1)
+        joystick.get_axis(2)
+        joystick.get_axis(3)
+        time.sleep(0.01)
+    #print("Ready!")
+
     done = False
     controllerEnable = False
     pad_speed = 1
