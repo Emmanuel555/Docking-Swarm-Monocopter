@@ -104,6 +104,6 @@ if __name__ == '__main__':
         
 
 # save data
-path = '/home/emmanuel/Monocopter-OCP/cf_robot_solo/'
-data_saver.save_data(path)
+#path = '/home/emmanuel/Monocopter-OCP/cf_robot_solo/'
+#data_saver.save_data(path)
 
