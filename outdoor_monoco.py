@@ -229,7 +229,7 @@ if __name__ == '__main__':
 
      # Initialize references
     ref_pos_circle = np.array([0.0,0.0,0.0])
-    ref_pos = np.array([1.0,0.0,1.0]) # 0,0 fked up for some reason
+    ref_pos = np.array([-1.0,0.0,1.0]) # 0,0 fked up for some reason
     land_pos = np.array([0.0,0.0,0.4])
     x_hover_offset = ref_pos[0]
     y_hover_offset = ref_pos[1]
@@ -461,7 +461,8 @@ if __name__ == '__main__':
             
         
             if loop_counter % 10 == 0:
-                #print('cmd and button commands: ', motor_cmd, button0, button1)
+                if dt > 0.0:
+                    print(f'manual alt: {manual_alt}, button 0: {button0}, motor_cmd: {pwm}, Update rate: {1/dt:.2f} Hz')
                 print(f"stage: {stage}, ref_msg: {ref_msg}")  
                 print("ref:", ref_pos)
                 #print('tx commands: ', a0, a1)
@@ -476,8 +477,8 @@ if __name__ == '__main__':
                 #print('monoco.raterates comparison: ', monoco.cmd_bod_raterates_final, monoco.ref_raterates)
                 #print('yawrate: ', yawrate)
 
-                if dt > 0.0:
-                    print(f"PWM: {pwm}, Update rate: {1/dt:.2f} Hz")
+                #if dt > 0.0:
+                    #print(f"PWM: {pwm}, Update rate: {1/dt:.2f} Hz")
                     #print('time step: ', dt, 'abs time: ', abs_time)
 
 
