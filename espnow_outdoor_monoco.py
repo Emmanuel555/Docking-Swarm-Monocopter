@@ -199,7 +199,7 @@ if __name__ == '__main__':
 
 
     # cyclic xyz (position)
-    kp = [1.5,1.5,0.0] # 0.04
+    kp = [2.5,2.5,0.0] # 0.04
     kd = [0.0005,0.0005,0.0] # not in use
     ki = [10.0,10.0,0.0] 
 
@@ -210,14 +210,14 @@ if __name__ == '__main__':
 
     # cyclic xy (attitude) - heuristic gains thus far
     ka = [6000, 6000]  # 6000
-    kr = [2.8, 2.8] # 10
+    kr = [2.8, 2.8] # 2.8
     krr = [1.0, 1.0] # 1.0
    
 
     # physical params
     wing_radius = 200/1000 # change to 700 next round
     chord_length = 0.12
-    mass = 1000
+    mass = 2100 # for outdoor monoco 2.1 * 1000
     cl = 0.5
     cd = 0.052
     J = np.array([1/100000,1/100000,1/1000000]) # moment of inertia
@@ -229,7 +229,7 @@ if __name__ == '__main__':
 
      # Initialize references
     ref_pos_circle = np.array([0.0,0.0,0.0])
-    ref_pos = np.array([-1.0,0.0,1.0]) # 0,0 fked up for some reason
+    ref_pos = np.array([-0.1,0.1,0.7]) # 0,0 fked up for some reason
     land_pos = np.array([0.0,0.0,0.4])
     x_hover_offset = ref_pos[0]
     y_hover_offset = ref_pos[1]
@@ -472,7 +472,7 @@ if __name__ == '__main__':
                 #print('manual_cyclic_xyz: ', auto_cyclic)
                 #print('p_cyclic_xyz: ', monoco.p_control_signal)
                 
-                #print('att_cmds: ', cmd_bod_acc)
+                print('att_cmds: ', cmd_bod_acc)
                 #print('monoco.rates comparison: ', monoco.cmd_bod_rates_final, monoco.ref_rates)
                 #print('monoco.raterates comparison: ', monoco.cmd_bod_raterates_final, monoco.ref_raterates)
                 #print('yawrate: ', yawrate)
