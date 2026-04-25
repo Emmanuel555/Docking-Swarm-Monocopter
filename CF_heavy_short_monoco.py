@@ -31,7 +31,7 @@ from cflib.crazyflie.syncLogger import SyncLogger
 # Change uris and sequences according to your setup
 
 # monoco radio 1
-URI1 = 'radio://0/80/2M/E7E7E7E705'
+URI1 = 'radio://0/80/2M/E7E7E7E702'
 
 
 uris = {
@@ -342,15 +342,15 @@ if __name__ == '__main__':
     
 
     # cyclic xy (attitude) - heuristic gains thus far
-    ka = [1500, 1500]  # 6000
-    kr = [3.0, 3.0] # 10
+    ka = [6000, 6000]  # 6000
+    kr = [2.0, 2.0] # 10
     krr = [1.0, 1.0] # 1.0
    
 
     # physical params
     wing_radius = 200/1000 # change to 700 next round
     chord_length = 0.12
-    mass = 1000
+    mass = 1000 # 1000 for OG short wing
     cl = 0.5
     cd = 0.052
     J = np.array([1/100000,1/100000,1/1000000]) # moment of inertia
@@ -587,7 +587,7 @@ if __name__ == '__main__':
 
 
                 # motor output
-                motor_cmd = collective_thrust # int(cyclic)*button0
+                motor_cmd = collective_thrust + int(cyclic)*button0
 
 
                 # motor saturation - manual thrust
@@ -606,9 +606,8 @@ if __name__ == '__main__':
                 if loop_counter % 10 == 0:
                     #print('cmd and button commands: ', motor_cmd, button0, button1)
                     #print('direction: ', a0, a1, manual_alt)
-                    if dt > 0.0:
-                        print(f"stage: {stage}, ref_msg: {ref_msg}, Update rate: {1/dt:.2f} Hz") 
-                    #print("ref:", ref_pos)
+                    print(f"stage: {stage}, ref_msg: {ref_msg}") 
+                    print("ref:", ref_pos)
                     #print('tx commands: ', a0, a1)
                     print('tpp_position', linear_state_vector[0], linear_state_vector[1], linear_state_vector[2])
                     #print('altitude: ', linear_state_vector[2])
@@ -619,8 +618,8 @@ if __name__ == '__main__':
                     #print('monoco.raterates comparison: ', monoco.cmd_bod_raterates_final, monoco.ref_raterates)
                     #print('yawrate: ', yawrate)
 
-                    #if dt > 0.0:
-                    #    print('frequency (Hz) = ', 1/dt)
+                    if dt > 0.0:
+                        print('frequency (Hz) = ', 1/dt)
                         #print('time step: ', dt, 'abs time: ', abs_time)
 
 
@@ -660,7 +659,7 @@ if __name__ == '__main__':
             #print('Emergency Stopped and final rmse produced: ', rmse_num )
             
                     
-monoco_name = 'outdoor'
+monoco_name = 'short'
 
 # save data
 #path = '/home/emmanuel/Monocopter-OCP/DFBC/fan_DFBC_' + monoco_name + chosen_traj + str(speedX*0.1) + '_ms'
