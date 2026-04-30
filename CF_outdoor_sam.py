@@ -342,8 +342,8 @@ if __name__ == '__main__':
     
 
     # cyclic xy (attitude) - heuristic gains thus far
-    ka = [1500, 1500]  # 6000
-    kr = [3.0, 3.0] # 10
+    ka = [6000, 6000]  # 6000
+    kr = [2.8, 2.8] # 10
     krr = [1.0, 1.0] # 1.0
    
 
@@ -362,7 +362,7 @@ if __name__ == '__main__':
 
      # Initialize references
     ref_pos_circle = np.array([0.0,0.0,0.0])
-    ref_pos = np.array([-1.0,0.0,1.0]) # 0,0 fked up for some reason
+    ref_pos = np.array([-0.5,0.0,1.0]) # 0,0 fked up for some reason
     land_pos = np.array([-1.0,0.0,0.4])
     x_hover_offset = ref_pos[0]
     y_hover_offset = ref_pos[1]
@@ -587,7 +587,7 @@ if __name__ == '__main__':
 
 
                 # motor output
-                motor_cmd = collective_thrust # int(cyclic)*button0
+                motor_cmd = int(cyclic)*button0 #+ collective_thrust 
 
 
                 # motor saturation - manual thrust
@@ -606,15 +606,15 @@ if __name__ == '__main__':
                 if loop_counter % 10 == 0:
                     #print('cmd and button commands: ', motor_cmd, button0, button1)
                     #print('direction: ', a0, a1, manual_alt)
-                    if dt > 0.0:
-                        print(f"stage: {stage}, ref_msg: {ref_msg}, Update rate: {1/dt:.2f} Hz") 
+                    #if dt > 0.0:
+                        #print(f"stage: {stage}, ref_msg: {ref_msg}, Update rate: {1/dt:.2f} Hz") 
                     #print("ref:", ref_pos)
                     #print('tx commands: ', a0, a1)
                     print('tpp_position', linear_state_vector[0], linear_state_vector[1], linear_state_vector[2])
                     #print('altitude: ', linear_state_vector[2])
                     #print('manual_cyclic_xyz: ', auto_cyclic)
                     #print('p_cyclic_xyz: ', monoco.p_control_signal)
-                    print('att_cmds: ', cmd_bod_acc)
+                    print(f"att_cmds: {cmd_bod_acc}, motor_cmd: {motor_cmd}")
                     #print('monoco.rates comparison: ', monoco.cmd_bod_rates_final, monoco.ref_rates)
                     #print('monoco.raterates comparison: ', monoco.cmd_bod_raterates_final, monoco.ref_raterates)
                     #print('yawrate: ', yawrate)

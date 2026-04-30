@@ -587,7 +587,7 @@ if __name__ == '__main__':
 
 
                 # motor output
-                motor_cmd = collective_thrust + int(cyclic)*button0
+                motor_cmd = int(cyclic)*button0 #+ collective_thrust
 
 
                 # motor saturation - manual thrust
@@ -613,13 +613,13 @@ if __name__ == '__main__':
                     #print('altitude: ', linear_state_vector[2])
                     #print('manual_cyclic_xyz: ', auto_cyclic)
                     #print('p_cyclic_xyz: ', monoco.p_control_signal)
-                    print('att_cmds: ', cmd_bod_acc)
+                    print(f"att_cmds: {cmd_bod_acc}, motor_cmd: {motor_cmd}")
                     #print('monoco.rates comparison: ', monoco.cmd_bod_rates_final, monoco.ref_rates)
                     #print('monoco.raterates comparison: ', monoco.cmd_bod_raterates_final, monoco.ref_raterates)
                     #print('yawrate: ', yawrate)
 
-                    if dt > 0.0:
-                        print('frequency (Hz) = ', 1/dt)
+                    #if dt > 0.0:
+                    #    print('frequency (Hz) = ', 1/dt)
                         #print('time step: ', dt, 'abs time: ', abs_time)
 
 

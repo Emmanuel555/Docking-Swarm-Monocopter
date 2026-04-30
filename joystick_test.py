@@ -1,56 +1,115 @@
+import socket
+import threading
 import pygame
 import time
+import timeit
+import serial
 
-if __name__ == '__main__':
+def transmitter_calibration(joystick):
+    lowest = 0.97
+    highest = -1
+    range_js = -(highest - lowest)
+    range_motor = 65535
+    rate = range_motor / range_js
+    a0 = joystick.get_axis(0)  # x axis right hand <- ->
+    a1 = joystick.get_axis(1)  # y axis right hand up down
+    a2 = joystick.get_axis(2)  # thrust
+    a3 = joystick.get_axis(3)
+
+    button0 = round(joystick.get_axis(5)) # 6
+    button1 = round(joystick.get_axis(6)) # 7
+    button2 = round(joystick.get_axis(4)) # 5
+    
+    # thrust from control pad
+    conPad = int((a2 - highest) * rate)
+
+    # throttle joystick saturation
+    if conPad < 10:
+        conPad = 10
+    if conPad > 65500:
+        conPad = 65500
+
+    # takeoff sign
+    if conPad < 2000:
+        enable = 0
+    else:
+        enable = 1
+
+    cmd = conPad*enable*button0 # thrust
+    if cmd != 0:
+        cmd = cmd/(65500/2)
+    #print(f"Joystick_axes available: {joystick.get_numaxes()}")
+
+    return (cmd, button0, button1, a0, a1, enable, conPad, button2)
+
+
+if __name__ == '__main__':        
+
+    time_start = time.time()
+    time_end = time_start + 1000
+    last_time = time.time()
+    count = 0
 
     # Initialize the joysticks
     pygame.init()
     pygame.joystick.init()
+    joystick = pygame.joystick.Joystick(0)
+    joystick.init()
+
+    # warmup - run 50 iterations before starting
+    #print("Warming up...")
+    for _ in range(50):
+        pygame.event.pump()
+        joystick.get_axis(0)
+        joystick.get_axis(1)
+        joystick.get_axis(2)
+        joystick.get_axis(3)
+        time.sleep(0.01)
+    #print("Ready!")
+
     done = False
     controllerEnable = False
     pad_speed = 1
+    t_horizon = 1/2
+    now = time.time()
 
-    time_begin = time.time()
-    time_end = time_begin + 1000
-    time_last = -1
+    while True:
+        pygame.event.pump()  # lightweight, just processes events without blocking
+        start = timeit.default_timer() 
+        dt = time.time() - now
+        now = time.time()  
+        abs_time = now - time_start
 
-    while time_end > time.time():
-        abs_time = time.time() - time_begin
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                done = True
+        # dk why need this for python 3.10
+        # joystick = pygame.joystick.Joystick(0) # added here to speed up loop
 
-        joystick = pygame.joystick.Joystick(0)
+        ## update from transmitter
+        tx_cmds = transmitter_calibration(joystick)  # get the joystick commands
+        manual_thrust = tx_cmds[0]  # thrust command
+        button0 = tx_cmds[1]
+        button1 = tx_cmds[2]
+        enable = tx_cmds[5]
+        conPad = tx_cmds[6]
+        button2 = tx_cmds[7]
 
-        joystick.init()
+        a0 = tx_cmds[3]     
+        a1 = tx_cmds[4]
+        #dt = now - last_time
+        #last_time = now
 
-        a0 = joystick.get_axis(0)  # x axis right hand <- -> ROLL
-        a1 = -joystick.get_axis(1)  # y axis right hand up down PITCH
-        a2 = joystick.get_axis(2)  # thrust up down COLLECTIVE
-        a3 = -joystick.get_axis(3) # YAW
-
-        L1 = joystick.get_button(0)  # default = 0
-        R1 = joystick.get_button(1)  # default = 0
-
+        #if count % 0.3 == 0:
+        print(f"Thrust: {manual_thrust}, X: {a0}, Y: {a1}, Enable: {enable}, Button0: {button0}, Button1: {button1}, ConPad: {conPad}, Button2: {button2}")     
         
-        lowest = 0.9
-        highest = -1
-        range_js = -(highest - lowest)
-        range_motor = 65535
+        #conPad = 1000+((conPad/65500)*1000) # for PWM
+        #conPad = conPad/65500 # for dshot
+        #print(f"ConPad: {conPad}")
 
-        rate = range_motor / range_js
+        #how fast the loop goes at
+        #print(f"dt: {dt}")
+        #sleep_time = max(0.0, t_horizon - (time.time() - now))
+        #print (f"sleep_time: {sleep_time}")
+        #time.sleep(sleep_time)
+        count += 1
 
-        #print("controller buttons", "roll: ", a0, "pitch: ", a1, "collective: ", a2, "yaw: ", a3)
-        print (L1, R1)
-        #print('abs_time', abs_time)
-        #print("number of buttons on controller: ", joystick.get_numbuttons())
-
-        time_diff = time.time() - time_last
-        time_last = time.time()
-        time.sleep(0.05)
-        #print('time_diff', time_diff)
-
-        conPad = int((a2 - highest) * rate)
-
-        print(conPad)
+        time.sleep(1/100) 
 
