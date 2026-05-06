@@ -5,6 +5,7 @@ from cflib.crazyflie.syncCrazyflie import SyncCrazyflie
 
 import logging
 import time
+import threading
 
 import Mocap
 import DataSave
@@ -48,7 +49,7 @@ def swarm_exe(cmd_att):
 
 def swarm_direction_exe(direction):
     direction_args = {
-        URI1: [direction],  # 1 = reverse, 0 is forward
+        URI1: [direction[0]],  # 1 = reverse, 0 is forward
     }
     return direction_args
 
@@ -231,24 +232,36 @@ def log_async(scf, logconf):
     #logconf.stop()
 
 
-def change_motor_direction(scf, direction):
+def direction_change_thread(scf, new_direction):
+    global direction_changing, last_direction
+    direction_changing = True
+
     """
     direction: 0 = forward, 1 = reverse
     """
+    cf = scf.cf
+    
+    for param in cf.param.toc.toc:
+        print(param)
+
+    count = 0
+    for group in cf.param.toc.toc:
+        count += len(cf.param.toc.toc[group])
+    print(f"Total params: {count}")
+
     try:
         cf = scf.cf
-        cf.param.set_value('motorDir.direction', str(direction))
+        cf.param.set_value('motorDir.direction', str(new_direction))
         cf.param.set_value('motorDir.trigger', '1')
-        print(f"Motor direction changed to: {'reverse' if direction else 'forward'}")
+        # wait for firmware to signal done
+        while cf.param.get_value('motorDir.done') == '0':
+            time.sleep(0.01)
+    
+        last_direction = new_direction
+        direction_changing = False
+        print(f"Motor direction changed to: {'reverse' if new_direction else 'forward'}")
     except Exception as e:
         print("Direction change error: ", e)
-
-
-def trigger_direction(scf, cmds):
-    try:
-        change_motor_direction(scf, cmds[0])
-    except Exception as e:
-        print("Motor direction error: ", e)
 
 
 if __name__ == '__main__':
@@ -287,10 +300,16 @@ if __name__ == '__main__':
     time_end = time.time() + (60*100*minutes) 
     loop_counter = 0
 
+    direction_changing = False
+    last_direction = 0
+
     with Swarm(uris, factory= CachedCfFactory(rw_cache='./cache')) as swarm:
         #swarm.reset_estimators()
         cmd_att_startup = np.array([0, 0, 0, 0]) # set init motor cmd to 0 0 0 0 (disarm)
         cmd_att = np.array([cmd_att_startup])
+        current_direction = np.array([last_direction]) # default direction
+        seq_dir = swarm_direction_exe(current_direction)
+        swarm.parallel(direction_change_thread, args_dict=seq_dir)
         data_log = logging_config()
         swarm_log = np.array([data_log])
         seq_args_log = swarm_logging(swarm_log)
@@ -318,7 +337,7 @@ if __name__ == '__main__':
                 conPad = tx_cmds[6]
                 button2 = tx_cmds[7]
                 manual_thrust = tx_cmds[8]
-                manual_trigger = tx_cmds[9]
+                current_direction = tx_cmds[9]
 
                 a0 = tx_cmds[3] # x     
                 a1 = tx_cmds[4] # y
@@ -326,20 +345,27 @@ if __name__ == '__main__':
                 # motor output
                 motor_cmd = int(manual_thrust)
 
+
+                # direction trigger
+                if current_direction != last_direction and not direction_changing:
+                    current_direction = np.array([current_direction])
+                    seq_dir = swarm_direction_exe(current_direction)
+                    swarm.parallel(direction_change_thread, args_dict=seq_dir)
+
+
                 # motor saturation - manual thrust
                 if motor_cmd > 65500:
                     motor_cmd = 65500
                 elif motor_cmd < 10:
                     motor_cmd = 10
 
-                
                 final_cmd = np.array([motor_cmd, motor_cmd, motor_cmd, motor_cmd]) # e.g                
                 final_cmd = np.array([final_cmd])
                 seq_args = swarm_exe(final_cmd)
                 swarm.parallel(arm_throttle, args_dict=seq_args)
 
                 if loop_counter % 10 == 0:
-                    print(f"Motor cmd: {motor_cmd}, Thrust: {manual_thrust}, X: {a0}, Y: {a1}, Enable: {enable}, Button0: {button0}, Button1: {button1}, ConPad: {conPad}, Button2: {button2}")     
+                    print(f"Current direction: {current_direction}, Motor cmd: {motor_cmd}, Thrust: {manual_thrust}, X: {a0}, Y: {a1}, Enable: {enable}, Button0: {button0}, Button1: {button1}, ConPad: {conPad}, Button2: {button2}")     
         
                 loop_counter += 1 
 
