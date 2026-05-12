@@ -232,14 +232,11 @@ def log_async(scf, logconf):
     #logconf.stop()
 
 
-def direction_change_thread(scf, new_direction):
-    global direction_changing, last_direction
-    direction_changing = True
-
+def init_direction_change_thread(scf, new_direction):
     """
     direction: 0 = forward, 1 = reverse
     """
-    cf = scf.cf
+    """ cf = scf.cf
     
     for param in cf.param.toc.toc:
         print(param)
@@ -247,16 +244,25 @@ def direction_change_thread(scf, new_direction):
     count = 0
     for group in cf.param.toc.toc:
         count += len(cf.param.toc.toc[group])
-    print(f"Total params: {count}")
+    print(f"Total params: {count}") """
 
     try:
         cf = scf.cf
-        cf.param.set_value('motorDir.direction', str(new_direction))
-        cf.param.set_value('motorDir.trigger', '1')
-        # wait for firmware to signal done
-        while cf.param.get_value('motorDir.done') == '0':
-            time.sleep(0.01)
-    
+        cf.param.set_value('motorDir.direction', int(new_direction))
+        print(f"Motor direction set to forward: {new_direction}, and done: {cf.param.get_value('motorDir.done')}")
+    except Exception as e:
+        print("Init direction change error: ", e)
+
+
+def direction_change_thread(scf, new_direction):
+    global direction_changing, last_direction
+    direction_changing = True
+    """
+    direction: 0 = forward, 1 = reverse
+    """
+    try:
+        cf = scf.cf
+        cf.param.set_value('motorDir.direction', int(new_direction))
         last_direction = new_direction
         direction_changing = False
         print(f"Motor direction changed to: {'reverse' if new_direction else 'forward'}")
@@ -309,7 +315,7 @@ if __name__ == '__main__':
         cmd_att = np.array([cmd_att_startup])
         current_direction = np.array([last_direction]) # default direction
         seq_dir = swarm_direction_exe(current_direction)
-        swarm.parallel(direction_change_thread, args_dict=seq_dir)
+        swarm.parallel(init_direction_change_thread, args_dict=seq_dir)
         data_log = logging_config()
         swarm_log = np.array([data_log])
         seq_args_log = swarm_logging(swarm_log)
