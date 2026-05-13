@@ -32,7 +32,7 @@ from cflib.crazyflie.syncLogger import SyncLogger
 # Change uris and sequences according to your setup
 
 # monoco radio 1
-URI1 = 'radio://0/80/2M/E7E7E7E705'
+URI1 = 'radio://0/80/2M/E7E7E7E702'
 
 
 uris = {
@@ -356,7 +356,7 @@ if __name__ == '__main__':
                 if current_direction != last_direction and not direction_changing:
                     current_direction = np.array([current_direction])
                     seq_dir = swarm_direction_exe(current_direction)
-                    swarm.parallel(direction_change_thread, args_dict=seq_dir)
+                    swarm.parallel(direction_change_thread, args_dict=seq_dir) # direction changing capped at 30000 dshot ratio wo motor fking up
 
 
                 # motor saturation - manual thrust
