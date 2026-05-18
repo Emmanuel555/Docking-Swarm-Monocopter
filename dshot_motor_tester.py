@@ -89,7 +89,7 @@ def arm_throttle(scf, cmds):
         cf = scf.cf
         if time_delay is True:
             cf.commander.send_position_setpoint(0, 0, 0, 0)  
-            time.sleep(0.1)
+            time.sleep(0.5)
             cf.commander.send_position_setpoint(int(cmds[0]), int(cmds[1]), int(cmds[2]), int(cmds[3]))  
             time_delay = False
         else:
