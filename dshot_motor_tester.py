@@ -196,14 +196,14 @@ def logging_config():
     #lg_stab.add_variable('gyro.z', 'float')
     
     # attitude rate
-    lg_stab.add_variable('ctrlINDI.Omega_f_p', 'float') # rad/s
-    lg_stab.add_variable('ctrlINDI.Omega_f_q', 'float')
-    lg_stab.add_variable('ctrlINDI.Omega_f_r', 'float')
+    lg_stab.add_variable('SAM_EMMA.Omega_f_p', 'float') # rad/s
+    lg_stab.add_variable('SAM_EMMA.Omega_f_q', 'float')
+    lg_stab.add_variable('SAM_EMMA.Omega_f_r', 'float')
     
     # attitude rate rate
-    lg_stab.add_variable('ctrlINDI.rate_d_roll', 'float') # rad/s^2
-    lg_stab.add_variable('ctrlINDI.rate_d_pitch', 'float')
-    lg_stab.add_variable('ctrlINDI.rate_d_yaw', 'float')
+    #lg_stab.add_variable('SAM_EMMA.rate_d[0]', 'float') # rad/s^2
+    #lg_stab.add_variable('SAM_EMMA.rate_d[1]', 'float')
+    #lg_stab.add_variable('SAM_EMMA.rate_d[2]', 'float')
 
     return (lg_stab)
 
@@ -219,15 +219,15 @@ def log_stab_callback(timestamp, data, logconf):
     #gyro_z = data.get('gyro.z') # yaw
 
     # attitude rate (rad/s)
-    omega_roll = data.get('ctrlINDI.Omega_f_p') # r 
-    omega_pitch = data.get('ctrlINDI.Omega_f_q') # p
-    omega_yaw = data.get('ctrlINDI.Omega_f_r') # y
+    omega_roll = data.get('SAM_EMMA.Omega_f_p','float') # r 
+    omega_pitch = data.get('SAM_EMMA.Omega_f_q') # p
+    omega_yaw = data.get('SAM_EMMA.Omega_f_r') # y
 
     # attitude rate rate (rad/s^2)
-    omega_roll_dot = data.get('ctrlINDI.rate_d_roll', 'float') # r 
-    omega_pitch_dot = data.get('ctrlINDI.rate_d_pitch', 'float') # p
-    omega_yaw_dot = data.get('ctrlINDI.rate_d_yaw', 'float') # y
-    print('omega_roll_dot:', omega_roll_dot)
+    #omega_roll_dot = data.get('SAM_EMMA.rate_d[0]', 'float') # r 
+    #omega_pitch_dot = data.get('SAM_EMMA.rate_d[1]', 'float') # p
+    #omega_yaw_dot = data.get('SAM_EMMA.rate_d[2]', 'float') # y
+    print('omega_roll:', omega_roll)
 
 
 def log_async(scf, logconf):
@@ -330,7 +330,7 @@ if __name__ == '__main__':
         seq_args_log = swarm_logging(swarm_log)
         seq_args = swarm_exe(cmd_att)
         swarm.parallel(init_throttle, args_dict=seq_args)
-        #swarm.parallel(log_async, args_dict=seq_args_log) # only can log up to six items at a time
+        swarm.parallel(log_async, args_dict=seq_args_log) # only can log up to six items at a time
 
         try:
             #while time_end > time.time():
@@ -379,8 +379,14 @@ if __name__ == '__main__':
                 seq_args = swarm_exe(final_cmd)
                 swarm.parallel(arm_throttle, args_dict=seq_args)
 
-                if loop_counter % 10 == 0:
-                    print(f"Current direction: {current_direction}, Motor cmd: {motor_cmd}, Thrust: {manual_thrust}, X: {a0}, Y: {a1}, Enable: {enable}, Button0: {button0}, Button1: {button1}, ConPad: {conPad}, Button2: {button2}")     
+                # data logging
+                data_log = logging_config()
+                swarm_log = np.array([data_log])
+                seq_args_log = swarm_logging(swarm_log)
+                swarm.parallel(log_async, args_dict=seq_args_log) # only can log up to six items at a time
+
+                #if loop_counter % 10 == 0:
+                #    print(f"Current direction: {current_direction}, Motor cmd: {motor_cmd}, Thrust: {manual_thrust}, X: {a0}, Y: {a1}, Enable: {enable}, Button0: {button0}, Button1: {button1}, ConPad: {conPad}, Button2: {button2}")     
         
                 loop_counter += 1 
 
