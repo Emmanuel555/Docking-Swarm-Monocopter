@@ -188,17 +188,22 @@ def att_manual_ctrl(a0,a1,af):
     return (cmd) 
 
     
-def logging_config():
+def logging_config(): # up to 6 at a time only 
     # Create the log config for the position
-    lg_stab = LogConfig(name='gyro_tracking', period_in_ms=10) # limited to 100 hz, period = 10/1000
-    #lg_stab.add_variable('gyro.x', 'float') # deg/s
-    #lg_stab.add_variable('gyro.y', 'float')
-    #lg_stab.add_variable('gyro.z', 'float')
+    lg_stab = LogConfig(name='gyro_tracking', period_in_ms=10) # 100ms=10 hz, 10ms=100 hz, 1ms=1000hz
+    """ lg_stab.add_variable('gyro.x', 'float') # deg/s
+    lg_stab.add_variable('gyro.y', 'float')
+    lg_stab.add_variable('gyro.z', 'float') """
     
-    # attitude rate
+    # filtered gyro (rad/s)
     lg_stab.add_variable('SAM_EMMA.Omega_f_p', 'float') # rad/s
     lg_stab.add_variable('SAM_EMMA.Omega_f_q', 'float')
     lg_stab.add_variable('SAM_EMMA.Omega_f_r', 'float')
+
+    # unfiltered gyro (rad/s)
+    lg_stab.add_variable('SAM_EMMA.r_roll', 'float') # rad/s
+    lg_stab.add_variable('SAM_EMMA.r_pitch', 'float')
+    lg_stab.add_variable('SAM_EMMA.r_yaw', 'float')
     
     # attitude rate rate
     #lg_stab.add_variable('SAM_EMMA.rate_d[0]', 'float') # rad/s^2
@@ -212,22 +217,40 @@ def param_stab_est_callback(name, value):
     print('The crazyflie monocopter has parameter ' + name + ' set at number: ' + value)
 
 
-def log_stab_callback(timestamp, data, logconf):
-    #print('[%d][%s]: %s' % (timestamp, logconf.name, data))
-    #gyro_x = data.get('gyro.x') # roll float
-    #gyro_y = data.get('gyro.y') # pitch
-    #gyro_z = data.get('gyro.z') # yaw
+log_print_counter = 0
 
-    # attitude rate (rad/s)
+
+def log_stab_callback(timestamp, data, logconf):
+    global log_print_counter
+    # gyro (deg/s)
+    """ gyro_x = data.get('gyro.x') # Angular velocity (rotation) around the X-axis, float
+    gyro_y = data.get('gyro.y') # Angular velocity (rotation) around the Y-axis, float
+    gyro_z = data.get('gyro.z') # Angular velocity (rotation) around the Z-axis, float
+    """
+
+    # filtered gyro (rad/s)
     omega_roll = data.get('SAM_EMMA.Omega_f_p','float') # r 
-    omega_pitch = data.get('SAM_EMMA.Omega_f_q') # p
+    omega_pitch = data.get('SAM_EMMA.Omega_f_q','float') # p
     omega_yaw = data.get('SAM_EMMA.Omega_f_r') # y
+
+    # unfiltered gyro (rad/s)
+    r_roll = data.get('SAM_EMMA.r_roll','float') # r 
+    r_pitch = data.get('SAM_EMMA.r_pitch','float') # p
+    r_yaw = data.get('SAM_EMMA.r_yaw','float') # y
+
+    log_print_counter += 1
+    if log_print_counter % 10 == 0:  # print every 10th sample
+        #print('[%d][%s]: %s' % (timestamp, logconf.name, data))
+        #print(f"gyro_x: {gyro_x:.4f} deg/s, r_roll: {r_roll:.4f} rad/s, omega_roll: {omega_roll:.4f} rad/s")
+        print(f"unfiltered_roll: {r_roll:.4f} rad/s, filtered_roll: {omega_roll:.4f} rad/s")
+
+    
 
     # attitude rate rate (rad/s^2)
     #omega_roll_dot = data.get('SAM_EMMA.rate_d[0]', 'float') # r 
     #omega_pitch_dot = data.get('SAM_EMMA.rate_d[1]', 'float') # p
     #omega_yaw_dot = data.get('SAM_EMMA.rate_d[2]', 'float') # y
-    print('omega_roll:', omega_roll)
+    #print('omega_roll:', omega_roll)
 
 
 def log_async(scf, logconf):
@@ -378,12 +401,6 @@ if __name__ == '__main__':
                 final_cmd = np.array([final_cmd])
                 seq_args = swarm_exe(final_cmd)
                 swarm.parallel(arm_throttle, args_dict=seq_args)
-
-                # data logging
-                data_log = logging_config()
-                swarm_log = np.array([data_log])
-                seq_args_log = swarm_logging(swarm_log)
-                swarm.parallel(log_async, args_dict=seq_args_log) # only can log up to six items at a time
 
                 #if loop_counter % 10 == 0:
                 #    print(f"Current direction: {current_direction}, Motor cmd: {motor_cmd}, Thrust: {manual_thrust}, X: {a0}, Y: {a1}, Enable: {enable}, Button0: {button0}, Button1: {button1}, ConPad: {conPad}, Button2: {button2}")     
