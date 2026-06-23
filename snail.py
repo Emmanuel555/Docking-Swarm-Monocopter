@@ -4,6 +4,7 @@ import pygame
 import time
 import timeit
 import serial
+import struct
 
 ESP32_IP = "192.168.1.108"
 ESP32_PORT = 5005
@@ -13,14 +14,14 @@ PC_PORT = 5005
 esp32_addr = None
 
 # ESPNOW
-#SERIAL_PORT = '/dev/ttyACM0'  # change to your port, Windows would be 'COM3' etc
-#BAUD_RATE = 115200
-#ser = serial.Serial(SERIAL_PORT, BAUD_RATE)
+SERIAL_PORT = '/dev/ttyACM0'  # change to your port, Windows would be 'COM3' etc
+BAUD_RATE = 115200
+ser = serial.Serial(SERIAL_PORT, BAUD_RATE)
 
 
-""" sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.bind((PC_IP, PC_PORT))
-print(f"PC UDP listening on {PC_IP}:{PC_PORT}") """
+print(f"PC UDP listening on {PC_IP}:{PC_PORT}")
 
 
 def transmitter_calibration(joystick):
@@ -122,8 +123,8 @@ if __name__ == '__main__':
         conPad = tx_cmds[6]
         button2 = tx_cmds[7]
 
-        a0 = tx_cmds[3]     
-        a1 = tx_cmds[4]
+        a0 = (tx_cmds[3])     
+        a1 = (tx_cmds[4])
         #dt = now - last_time
         #last_time = now
 
@@ -143,26 +144,18 @@ if __name__ == '__main__':
 
         try:
             ##pwm
-            pwm = int(conPad)
-            pwm = max(1000, min(2000, pwm)) # pwm
+            rotor = max(1000, min(2000, conPad)) # pwm
             #pwm = int(1200)
-            print(f"PWM: {pwm}, X: {a0}, Y: {a1}, Direction: {button2}, Auto_toggle: {button1}, Update rate: {1/dt:.2f} Hz")
-            #ser.write(pwm.to_bytes(2, byteorder='little'))
-            #ser.write((str(pwm) + "\n").encode())
-            #sock.sendto((str(pwm) + "\n").encode(), (ESP32_IP, ESP32_PORT)) # hardcoded
-            #sock.sendto((str(pwm) + "\n").encode(), esp32_addr) # auto
+            print(f"Rotor: {rotor}, X: {a0}, Y: {a1}, Direction: {button2}, Auto_toggle: {button1}, Update rate: {1/dt:.2f} Hz")
+            packet = struct.pack('<4f', float(rotor), a0, a1, float(button2))
 
-            ##dshot
-            """ dshot = float(conPad)
-            dshot = round(dshot,3)
-            dshot = max(0, min(1.0, dshot)) # dshot
-            print (str(button0) + "," + str(dshot))
-            sock.sendto((str(button0) + "," + str(dshot) + "\n").encode(), (ESP32_IP, ESP32_PORT)) # hardcoded
-             """
-            #sock.sendto((str(pwm) + "\n").encode(), esp32_addr) # auto
+            # serial w address inserted on top
+            ser.write(packet)
+            # udp with port explicitly inserted below
+            sock.sendto(packet, (ESP32_IP, ESP32_PORT)) # hardcoded
 
 
         except ValueError:
-            print("Invalid input, enter a number between 1000-2000")
+            print("Invalid process")
 
         time.sleep(1/250) 
