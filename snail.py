@@ -24,6 +24,10 @@ sock.bind((PC_IP, PC_PORT))
 print(f"PC UDP listening on {PC_IP}:{PC_PORT}")
 
 
+def axis_to_angle(value, in_min=-1.0, in_max=1.0, out_min=0.0, out_max=180.0):
+    return (value - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
+
+
 def transmitter_calibration(joystick):
     lowest = 0.97
     highest = -1
@@ -71,10 +75,26 @@ def receive_loop():
         print(f"\nFrom ESP32/Teensy {addr}: {msg}")
 
 
+def feedback_serial_states():
+    """ reads CSV lines from the ESP32: x,y,vx,vy,mag """
+    while True:
+        line = ser.readline().decode(errors="ignore").strip()
+        if not line:
+            continue
+        try:
+            x, y, vx, vy, mag = (float(v) for v in line.split(","))
+            print(f"ESP32 snail state -> x: {x:.3f}, y: {y:.3f}, vx: {vx:.3f}, vy: {vy:.3f}, mag: {mag:.3f}")
+        except ValueError:
+            print(f"Malformed serial line: {line}")
+
+
 if __name__ == '__main__':        
 
     #recv_thread = threading.Thread(target=receive_loop, daemon=True)
     #recv_thread.start()
+
+    serial_thread = threading.Thread(target=feedback_serial_states, daemon=True)
+    serial_thread.start()
 
     time_start = time.time()
     time_end = time_start + 1000
@@ -143,11 +163,12 @@ if __name__ == '__main__':
         count += 1
 
         try:
-            ##pwm
+            ## control input
             rotor = max(1000, min(2000, conPad)) # pwm
-            #pwm = int(1200)
-            print(f"Rotor: {rotor}, X: {a0}, Y: {a1}, Direction: {button2}, Auto_toggle: {button1}, Update rate: {1/dt:.2f} Hz")
-            packet = struct.pack('<4f', float(rotor), a0, a1, float(button2))
+            angle0 = axis_to_angle(a0) # 0 - 180 deg
+            angle1 = axis_to_angle(a1) # 0 - 180 deg
+            #print(f"Rotor: {rotor}, X: {angle0}, Y: {angle1}, Direction: {button2}, Auto_toggle: {button1}, Update rate: {1/dt:.2f} Hz")
+            packet = struct.pack('<4f', angle0, angle1, float(rotor), float(rotor))
 
             # serial w address inserted on top
             ser.write(packet)
