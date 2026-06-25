@@ -13,6 +13,9 @@ PC_IP = "0.0.0.0"   # listen on all interfaces
 PC_PORT = 5005
 esp32_addr = None
 
+latest_state = None
+latest_state_lock = threading.Lock()
+
 # ESPNOW
 SERIAL_PORT = '/dev/ttyACM0'  # change to your port, Windows would be 'COM3' etc
 BAUD_RATE = 115200
@@ -78,12 +81,29 @@ def receive_loop():
 def feedback_serial_states():
     """ reads CSV lines from the ESP32: x,y,vx,vy,mag """
     while True:
-        line = ser.readline().decode(errors="ignore").strip()
+        try:
+            line = ser.readline().decode(errors="ignore").strip()
+        except serial.SerialException as e:
+            print(f"Serial read error: {e} - reconnecting...")
+            try:
+                ser.close()
+            except serial.SerialException:
+                pass
+            time.sleep(1)
+            try:
+                ser.open()
+            except serial.SerialException:
+                pass
+            continue
+
         if not line:
             continue
         try:
             x, y, vx, vy, mag = (float(v) for v in line.split(","))
-            print(f"ESP32 snail state -> x: {x:.3f}, y: {y:.3f}, vx: {vx:.3f}, vy: {vy:.3f}, mag: {mag:.3f}")
+            #print(f"ESP32 snail state -> x: {x:.3f}, y: {y:.3f}, vx: {vx:.3f}, vy: {vy:.3f}, mag: {mag:.3f}")
+            global latest_state
+            with latest_state_lock:
+                latest_state = (x, y, vx, vy, mag)
         except ValueError:
             print(f"Malformed serial line: {line}")
 
@@ -138,7 +158,7 @@ if __name__ == '__main__':
         tx_cmds = transmitter_calibration(joystick)  # get the joystick commands
         manual_thrust = tx_cmds[0]  # thrust command
         button0 = tx_cmds[1]
-        button1 = tx_cmds[2]
+        button1 = tx_cmds[2] - 1
         enable = tx_cmds[5]
         conPad = tx_cmds[6]
         button2 = tx_cmds[7]
@@ -162,16 +182,28 @@ if __name__ == '__main__':
         #time.sleep(sleep_time)
         count += 1
 
+        with latest_state_lock:
+            current_state = latest_state
+
+        if current_state is not None:
+            x, y, vx, vy, mag = current_state
+            print(f"Using state -> x: {x:.3f}, y: {y:.3f}, vx: {vx:.3f}, vy: {vy:.3f}, mag: {mag:.3f}")
+
         try:
             ## control input
             rotor = max(1000, min(2000, conPad)) # pwm
             angle0 = axis_to_angle(a0) # 0 - 180 deg
             angle1 = axis_to_angle(a1) # 0 - 180 deg
             #print(f"Rotor: {rotor}, X: {angle0}, Y: {angle1}, Direction: {button2}, Auto_toggle: {button1}, Update rate: {1/dt:.2f} Hz")
-            packet = struct.pack('<4f', angle0, angle1, float(rotor), float(rotor))
+            SYNC = bytes([0xAA, 0x55])
+            packet = struct.pack('<5f', angle0, angle1, float(rotor), float(rotor), float(button1))
+
+            checksum = 0
+            for b in packet:
+                checksum ^= b
 
             # serial w address inserted on top
-            ser.write(packet)
+            ser.write(SYNC + packet + bytes([checksum]))   # 23 bytes total over serial now
             # udp with port explicitly inserted below
             sock.sendto(packet, (ESP32_IP, ESP32_PORT)) # hardcoded
 
