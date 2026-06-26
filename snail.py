@@ -105,7 +105,7 @@ def feedback_serial_states():
             with latest_state_lock:
                 latest_state = (x, y, vx, vy, mag)
         except ValueError:
-            print(f"Malformed serial line: {line}")
+            print(f"Outgoing control inputs: {line}")
 
 
 if __name__ == '__main__':        
@@ -187,7 +187,7 @@ if __name__ == '__main__':
 
         if current_state is not None:
             x, y, vx, vy, mag = current_state
-            print(f"Using state -> x: {x:.3f}, y: {y:.3f}, vx: {vx:.3f}, vy: {vy:.3f}, mag: {mag:.3f}")
+            print(f"Incoming state feedback -> x: {x:.3f}, y: {y:.3f}, vx: {vx:.3f}, vy: {vy:.3f}, mag: {mag:.3f}")
 
         try:
             ## control input
@@ -211,4 +211,4 @@ if __name__ == '__main__':
         except ValueError:
             print("Invalid process")
 
-        time.sleep(1/250) 
+        time.sleep(1/10) 
