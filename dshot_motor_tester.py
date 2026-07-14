@@ -32,7 +32,7 @@ from cflib.crazyflie.syncLogger import SyncLogger
 # Change uris and sequences according to your setup
 
 # monoco radio 1
-URI1 = 'radio://0/80/2M/E7E7E7E702'
+URI1 = 'radio://0/80/2M/E7E7E7E705'
 
 
 uris = {
@@ -187,23 +187,29 @@ def att_manual_ctrl(a0,a1,af):
     cmd = np.array([control_x, control_y, control_z])  # roll, pitch, yawrate, thrust
     return (cmd) 
 
-    
-def logging_config(): # up to 6 at a time only 
+
+def logging_config(filter): # up to 6 at a time only
+    global log_filter
+    log_filter = filter
     # Create the log config for the position
     lg_stab = LogConfig(name='gyro_tracking', period_in_ms=10) # 100ms=10 hz, 10ms=100 hz, 1ms=1000hz
     """ lg_stab.add_variable('gyro.x', 'float') # deg/s
     lg_stab.add_variable('gyro.y', 'float')
     lg_stab.add_variable('gyro.z', 'float') """
     
-    # filtered gyro (rad/s)
-    lg_stab.add_variable('SAM_EMMA.Omega_f_p', 'float') # rad/s
-    lg_stab.add_variable('SAM_EMMA.Omega_f_q', 'float')
-    lg_stab.add_variable('SAM_EMMA.Omega_f_r', 'float')
+    if filter == 0:
+        # filtered gyro (rad/s)
+        lg_stab.add_variable('SAM_EMMA.Omega_f_p', 'float') # rad/s
+        lg_stab.add_variable('SAM_EMMA.Omega_f_q', 'float')
+        lg_stab.add_variable('SAM_EMMA.Omega_f_r', 'float')
+    else:
+        # unfiltered gyro (rad/s)
+        lg_stab.add_variable('SAM_EMMA.r_roll', 'float') # rad/s
+        lg_stab.add_variable('SAM_EMMA.r_pitch', 'float')
+        lg_stab.add_variable('SAM_EMMA.r_yaw', 'float')
 
-    # unfiltered gyro (rad/s)
-    lg_stab.add_variable('SAM_EMMA.r_roll', 'float') # rad/s
-    lg_stab.add_variable('SAM_EMMA.r_pitch', 'float')
-    lg_stab.add_variable('SAM_EMMA.r_yaw', 'float')
+    # zrange
+    lg_stab.add_variable('range.zrange', 'uint16_t')
     
     # attitude rate rate
     #lg_stab.add_variable('SAM_EMMA.rate_d[0]', 'float') # rad/s^2
@@ -221,28 +227,37 @@ log_print_counter = 0
 
 
 def log_stab_callback(timestamp, data, logconf):
-    global log_print_counter
+    global log_print_counter, z_range
     # gyro (deg/s)
     """ gyro_x = data.get('gyro.x') # Angular velocity (rotation) around the X-axis, float
     gyro_y = data.get('gyro.y') # Angular velocity (rotation) around the Y-axis, float
     gyro_z = data.get('gyro.z') # Angular velocity (rotation) around the Z-axis, float
     """
 
-    # filtered gyro (rad/s)
-    omega_roll = data.get('SAM_EMMA.Omega_f_p','float') # r 
-    omega_pitch = data.get('SAM_EMMA.Omega_f_q','float') # p
-    omega_yaw = data.get('SAM_EMMA.Omega_f_r') # y
+    if log_filter == 0:
+        # filtered gyro (rad/s)
+        omega_roll = data.get('SAM_EMMA.Omega_f_p','float') # r
+        omega_pitch = data.get('SAM_EMMA.Omega_f_q','float') # p
+        omega_yaw = data.get('SAM_EMMA.Omega_f_r') # y
+        # zrange sensing
+        z_range = data.get('range.zrange', 'uint16_t')
 
-    # unfiltered gyro (rad/s)
-    r_roll = data.get('SAM_EMMA.r_roll','float') # r 
-    r_pitch = data.get('SAM_EMMA.r_pitch','float') # p
-    r_yaw = data.get('SAM_EMMA.r_yaw','float') # y
+    else:
+        # unfiltered gyro (rad/s)
+        r_roll = data.get('SAM_EMMA.r_roll','float') # r 
+        r_pitch = data.get('SAM_EMMA.r_pitch','float') # p
+        r_yaw = data.get('SAM_EMMA.r_yaw','float') # y
+        # zrange sensing
+        z_range = data.get('range.zrange', 'uint16_t')
 
+
+    
     log_print_counter += 1
-    if log_print_counter % 10 == 0:  # print every 10th sample
+    if log_print_counter % 2 == 0:  # print every 10th sample
         #print('[%d][%s]: %s' % (timestamp, logconf.name, data))
         #print(f"gyro_x: {gyro_x:.4f} deg/s, r_roll: {r_roll:.4f} rad/s, omega_roll: {omega_roll:.4f} rad/s")
-        print(f"unfiltered_roll: {r_roll:.4f} rad/s, filtered_roll: {omega_roll:.4f} rad/s")
+        #print(f"unfiltered_roll: {r_roll:.4f} rad/s, filtered_roll: {omega_roll:.4f} rad/s")
+        print(f"z_range: {z_range} mm")
 
     
 
@@ -340,6 +355,7 @@ if __name__ == '__main__':
     direction_changing = False
     last_direction = 0
     time_delay = False
+    filter = 0
 
     with Swarm(uris, factory= CachedCfFactory(rw_cache='./cache')) as swarm:
         #swarm.reset_estimators()
@@ -348,7 +364,7 @@ if __name__ == '__main__':
         current_direction = np.array([last_direction]) # default direction
         seq_dir = swarm_direction_exe(current_direction)
         swarm.parallel(init_direction_change_thread, args_dict=seq_dir)
-        data_log = logging_config()
+        data_log = logging_config(filter)
         swarm_log = np.array([data_log])
         seq_args_log = swarm_logging(swarm_log)
         seq_args = swarm_exe(cmd_att)
