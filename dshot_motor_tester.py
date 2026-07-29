@@ -89,7 +89,7 @@ def arm_throttle(scf, cmds):
         cf = scf.cf
         if time_delay is True:
             cf.commander.send_position_setpoint(0, 0, 0, 0)  
-            time.sleep(0.5)
+            time.sleep(0.3)
             cf.commander.send_position_setpoint(int(cmds[0]), int(cmds[1]), int(cmds[2]), int(cmds[3]))  
             time_delay = False
         else:
@@ -202,14 +202,19 @@ def logging_config(filter): # up to 6 at a time only
         lg_stab.add_variable('SAM_EMMA.Omega_f_p', 'float') # rad/s
         lg_stab.add_variable('SAM_EMMA.Omega_f_q', 'float')
         lg_stab.add_variable('SAM_EMMA.Omega_f_r', 'float')
+    elif filter == 1:
+        # zrange
+        lg_stab.add_variable('range.front', 'uint16_t')
+        lg_stab.add_variable('range.back', 'uint16_t')
+        lg_stab.add_variable('range.up', 'uint16_t')
+        lg_stab.add_variable('range.zrange', 'uint16_t')
     else:
         # unfiltered gyro (rad/s)
         lg_stab.add_variable('SAM_EMMA.r_roll', 'float') # rad/s
         lg_stab.add_variable('SAM_EMMA.r_pitch', 'float')
         lg_stab.add_variable('SAM_EMMA.r_yaw', 'float')
 
-    # zrange
-    lg_stab.add_variable('range.zrange', 'uint16_t')
+    
     
     # attitude rate rate
     #lg_stab.add_variable('SAM_EMMA.rate_d[0]', 'float') # rad/s^2
@@ -241,7 +246,12 @@ def log_stab_callback(timestamp, data, logconf):
         omega_yaw = data.get('SAM_EMMA.Omega_f_r') # y
         # zrange sensing
         z_range = data.get('range.zrange', 'uint16_t')
-
+    elif log_filter == 1:
+        # range sensing
+        front_range = data.get('range.front', 'uint16_t')
+        back_range = data.get('range.back', 'uint16_t')
+        up_range = data.get('range.up', 'uint16_t')
+        z_range = data.get('range.zrange', 'uint16_t')    
     else:
         # unfiltered gyro (rad/s)
         r_roll = data.get('SAM_EMMA.r_roll','float') # r 
@@ -257,7 +267,7 @@ def log_stab_callback(timestamp, data, logconf):
         #print('[%d][%s]: %s' % (timestamp, logconf.name, data))
         #print(f"gyro_x: {gyro_x:.4f} deg/s, r_roll: {r_roll:.4f} rad/s, omega_roll: {omega_roll:.4f} rad/s")
         #print(f"unfiltered_roll: {r_roll:.4f} rad/s, filtered_roll: {omega_roll:.4f} rad/s")
-        print(f"z_range: {z_range} mm")
+        print(f"front_range: {front_range} mm, back_range: {back_range} mm, up_range: {up_range} mm, z_range: {z_range} mm")
 
     
 
@@ -301,7 +311,6 @@ def init_direction_change_thread(scf, new_direction):
 
 def direction_change_thread(scf, new_direction):
     global direction_changing, last_direction, time_delay
-    direction_changing = True
     """
     direction: 0 = forward, 1 = reverse
     """
@@ -355,7 +364,7 @@ if __name__ == '__main__':
     direction_changing = False
     last_direction = 0
     time_delay = False
-    filter = 0
+    filter = 1
 
     with Swarm(uris, factory= CachedCfFactory(rw_cache='./cache')) as swarm:
         #swarm.reset_estimators()
@@ -421,9 +430,12 @@ if __name__ == '__main__':
                 #if loop_counter % 10 == 0:
                 #    print(f"Current direction: {current_direction}, Motor cmd: {motor_cmd}, Thrust: {manual_thrust}, X: {a0}, Y: {a1}, Enable: {enable}, Button0: {button0}, Button1: {button1}, ConPad: {conPad}, Button2: {button2}")     
         
-                loop_counter += 1 
+                loop_counter += 1
+                #if loop_counter % 50 == 0:
+                #    print ("current_direction: ", current_direction)
+                    #print(f"Update rate: {1/dt:.1f} Hz")
 
-                #time.sleep(0.001) 
+                #time.sleep(0.001)
 
 
         except KeyboardInterrupt:  
