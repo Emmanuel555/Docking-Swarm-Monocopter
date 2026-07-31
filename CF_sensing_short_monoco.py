@@ -364,7 +364,7 @@ if __name__ == '__main__':
 
     data_saver = DataSave.SaveData('Data_time',
                                    'Monocopter_XYZ','rotational_state_vector','motor_cmd','ref_position','ref_velocity','motor_actual_cmd','cmd_bod_acc','yawrate',
-                                   'front_range','back_range','up_range','z_range','body_yaw')
+                                   'front_range','back_range','up_range','z_range','body_yaw','bod_angle_roll')
                 
                                    
     logging.basicConfig(level=logging.ERROR)
@@ -764,7 +764,7 @@ if __name__ == '__main__':
                         #            rmse_num,att_error,att_rate_error,att_raterate_error,yawrate)   
                         
                         data_saver.add_item(abs_time,linear_state_vector[0:6],rotational_state_vector,motor_cmd,ref_pos,ref_vel,motor_cmd,cmd_bod_acc,yawrate,
-                                            front_range,back_range,up_range,z_range,body_yaw)
+                                            front_range,back_range,up_range,z_range,body_yaw,bod_angle_roll)
 
                     
 
