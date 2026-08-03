@@ -204,8 +204,8 @@ def logging_config(filter): # up to 6 at a time only
     elif filter == 1:
         # zrange
         lg_stab.add_variable('range.front', 'uint16_t')
-        lg_stab.add_variable('range.back', 'uint16_t')
-        lg_stab.add_variable('range.up', 'uint16_t')
+        lg_stab.add_variable('range.left', 'uint16_t')
+        lg_stab.add_variable('range.right', 'uint16_t')
         lg_stab.add_variable('range.zrange', 'uint16_t')
     else:
         # unfiltered gyro (rad/s)
@@ -228,13 +228,13 @@ def param_stab_est_callback(name, value):
 
 log_print_counter = 0
 front_range = 0
-back_range = 0
-up_range = 0
+left_range = 0
+right_range = 0
 z_range = 0
 
 
 def log_stab_callback(timestamp, data, logconf):
-    global log_print_counter, front_range, back_range, up_range, z_range
+    global log_print_counter, front_range, left_range, right_range, z_range
     # gyro (deg/s)
     """ gyro_x = data.get('gyro.x') # Angular velocity (rotation) around the X-axis, float
     gyro_y = data.get('gyro.y') # Angular velocity (rotation) around the Y-axis, float
@@ -251,9 +251,9 @@ def log_stab_callback(timestamp, data, logconf):
     elif log_filter == 1:
         # range sensing
         front_range = data.get('range.front', 'uint16_t')
-        back_range = data.get('range.back', 'uint16_t')
-        up_range = data.get('range.up', 'uint16_t')
-        z_range = data.get('range.zrange', 'uint16_t')    
+        left_range = data.get('range.left', 'uint16_t')
+        right_range = data.get('range.right', 'uint16_t')
+        z_range = data.get('range.zrange', 'uint16_t')
     else:
         # unfiltered gyro (rad/s)
         r_roll = data.get('SAM_EMMA.r_roll','float') # r 
@@ -269,7 +269,7 @@ def log_stab_callback(timestamp, data, logconf):
         #print('[%d][%s]: %s' % (timestamp, logconf.name, data))
         #print(f"gyro_x: {gyro_x:.4f} deg/s, r_roll: {r_roll:.4f} rad/s, omega_roll: {omega_roll:.4f} rad/s")
         #print(f"unfiltered_roll: {r_roll:.4f} rad/s, filtered_roll: {omega_roll:.4f} rad/s")
-        print(f"front_range: {front_range} mm, back_range: {back_range} mm, up_range: {up_range} mm, z_range: {z_range} mm")
+        print(f"front_range: {front_range} mm, left_range: {left_range} mm, right_range: {right_range} mm, z_range: {z_range} mm")
 
     
     # attitude rate rate (rad/s^2)
@@ -364,7 +364,7 @@ if __name__ == '__main__':
 
     data_saver = DataSave.SaveData('Data_time',
                                    'Monocopter_XYZ','rotational_state_vector','motor_cmd','ref_position','ref_velocity','motor_actual_cmd','cmd_bod_acc','yawrate',
-                                   'front_range','back_range','up_range','z_range','body_yaw','bod_angle_roll')
+                                   'front_range','left_range','right_range','z_range','body_yaw','bod_angle_roll')
                 
                                    
     logging.basicConfig(level=logging.ERROR)
@@ -764,7 +764,7 @@ if __name__ == '__main__':
                         #            rmse_num,att_error,att_rate_error,att_raterate_error,yawrate)   
                         
                         data_saver.add_item(abs_time,linear_state_vector[0:6],rotational_state_vector,motor_cmd,ref_pos,ref_vel,motor_cmd,cmd_bod_acc,yawrate,
-                                            front_range,back_range,up_range,z_range,body_yaw,bod_angle_roll)
+                                            front_range,left_range,right_range,z_range,body_yaw,bod_angle_roll)
 
                     
 

@@ -205,8 +205,8 @@ def logging_config(filter): # up to 6 at a time only
     elif filter == 1:
         # zrange
         lg_stab.add_variable('range.front', 'uint16_t')
-        lg_stab.add_variable('range.back', 'uint16_t')
-        lg_stab.add_variable('range.up', 'uint16_t')
+        lg_stab.add_variable('range.left', 'uint16_t')
+        lg_stab.add_variable('range.right', 'uint16_t')
         lg_stab.add_variable('range.zrange', 'uint16_t')
     else:
         # unfiltered gyro (rad/s)
@@ -214,8 +214,7 @@ def logging_config(filter): # up to 6 at a time only
         lg_stab.add_variable('SAM_EMMA.r_pitch', 'float')
         lg_stab.add_variable('SAM_EMMA.r_yaw', 'float')
 
-    
-    
+
     # attitude rate rate
     #lg_stab.add_variable('SAM_EMMA.rate_d[0]', 'float') # rad/s^2
     #lg_stab.add_variable('SAM_EMMA.rate_d[1]', 'float')
@@ -249,8 +248,8 @@ def log_stab_callback(timestamp, data, logconf):
     elif log_filter == 1:
         # range sensing
         front_range = data.get('range.front', 'uint16_t')
-        back_range = data.get('range.back', 'uint16_t')
-        up_range = data.get('range.up', 'uint16_t')
+        left_range = data.get('range.left', 'uint16_t')
+        right_range = data.get('range.right', 'uint16_t')
         z_range = data.get('range.zrange', 'uint16_t')    
     else:
         # unfiltered gyro (rad/s)
@@ -267,10 +266,9 @@ def log_stab_callback(timestamp, data, logconf):
         #print('[%d][%s]: %s' % (timestamp, logconf.name, data))
         #print(f"gyro_x: {gyro_x:.4f} deg/s, r_roll: {r_roll:.4f} rad/s, omega_roll: {omega_roll:.4f} rad/s")
         #print(f"unfiltered_roll: {r_roll:.4f} rad/s, filtered_roll: {omega_roll:.4f} rad/s")
-        print(f"front_range: {front_range} mm, back_range: {back_range} mm, up_range: {up_range} mm, z_range: {z_range} mm")
+        print(f"front_range: {front_range} mm, left_range: {left_range} mm, right_range: {right_range} mm, z_range: {z_range} mm")
 
     
-
     # attitude rate rate (rad/s^2)
     #omega_roll_dot = data.get('SAM_EMMA.rate_d[0]', 'float') # r 
     #omega_pitch_dot = data.get('SAM_EMMA.rate_d[1]', 'float') # p
