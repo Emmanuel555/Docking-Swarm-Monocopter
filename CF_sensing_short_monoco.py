@@ -265,7 +265,7 @@ def log_stab_callback(timestamp, data, logconf):
 
     
     log_print_counter += 1
-    if log_print_counter % 2 == 0:  # print every 10th sample
+    if log_print_counter % 12 == 0:  # print every 10th sample
         #print('[%d][%s]: %s' % (timestamp, logconf.name, data))
         #print(f"gyro_x: {gyro_x:.4f} deg/s, r_roll: {r_roll:.4f} rad/s, omega_roll: {omega_roll:.4f} rad/s")
         #print(f"unfiltered_roll: {r_roll:.4f} rad/s, filtered_roll: {omega_roll:.4f} rad/s")
@@ -537,8 +537,8 @@ if __name__ == '__main__':
         cmd_att = np.array([cmd_att_startup])
         current_direction = np.array([last_direction]) # default direction
         seq_dir = swarm_direction_exe(current_direction)
-        swarm.parallel(init_direction_change_thread, args_dict=seq_dir)
-        data_log = logging_config()
+        swarm.parallel(init_direction_change_thread, args_dict=seq_dir) # reverse thrust
+        data_log = logging_config(filter)
         swarm_log = np.array([data_log])
         seq_args_log = swarm_logging(swarm_log)
         seq_args = swarm_exe(cmd_att)
@@ -701,7 +701,7 @@ if __name__ == '__main__':
 
 
                 # motor output
-                motor_cmd = int(cyclic)*button0 #+ collective_thrust
+                motor_cmd = int(cyclic)*button0 + collective_thrust
 
 
                 # direction trigger
@@ -724,7 +724,7 @@ if __name__ == '__main__':
                 swarm.parallel(arm_throttle, args_dict=seq_args)
 
 
-                if loop_counter % 10 == 0:
+                """ if loop_counter % 10 == 0:
                     print('cmd and button commands: ', motor_cmd, button0, button1)
                     #print('direction: ', a0, a1, manual_alt)
                     #print(f"stage: {stage}, ref_msg: {ref_msg}") 
@@ -737,7 +737,7 @@ if __name__ == '__main__':
                     print(f"att_cmds: {cmd_bod_acc}, motor_cmd: {motor_cmd}")
                     #print('monoco.rates comparison: ', monoco.cmd_bod_rates_final, monoco.ref_rates)
                     #print('monoco.raterates comparison: ', monoco.cmd_bod_raterates_final, monoco.ref_raterates)
-                    #print('yawrate: ', yawrate)
+                    #print('yawrate: ', yawrate) """
 
                     #if dt > 0.0:
                     #    print('frequency (Hz) = ', 1/dt)
@@ -781,7 +781,7 @@ if __name__ == '__main__':
             #print('Emergency Stopped and final rmse produced: ', rmse_num )
             
                     
-monoco_name = 'short'
+monoco_name = 'sensing_short'
 
 # save data
 #path = '/home/emmanuel/Docking-Swarm-Monocopter/sim_data/sensing_DFBC_' + monoco_name + chosen_traj + str(speedX*0.1) + '_ms'
