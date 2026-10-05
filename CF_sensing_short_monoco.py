@@ -222,6 +222,16 @@ def logging_config(filter): # up to 6 at a time only
     return (lg_stab)
 
 
+def battery_logging_config():
+    # Create the log config for the battery (separate block, slow rate)
+    lg_bat = LogConfig(name='battery', period_in_ms=100) # 100ms=10 hz
+    lg_bat.add_variable('pm.vbat', 'float') # V
+    lg_bat.add_variable('pm.batteryLevel', 'uint8_t') # %
+    lg_bat.add_variable('pm.state', 'int8_t') # 0 battery, 1 charging, 2 charged, 3 low power, 4 shutdown
+
+    return (lg_bat)
+
+
 def param_stab_est_callback(name, value):
     print('The crazyflie monocopter has parameter ' + name + ' set at number: ' + value)
 
@@ -265,7 +275,7 @@ def log_stab_callback(timestamp, data, logconf):
 
     
     log_print_counter += 1
-    if log_print_counter % 12 == 0:  # print every 10th sample
+    if log_print_counter % 20 == 0:  # print every 10th sample
         #print('[%d][%s]: %s' % (timestamp, logconf.name, data))
         #print(f"gyro_x: {gyro_x:.4f} deg/s, r_roll: {r_roll:.4f} rad/s, omega_roll: {omega_roll:.4f} rad/s")
         #print(f"unfiltered_roll: {r_roll:.4f} rad/s, filtered_roll: {omega_roll:.4f} rad/s")
@@ -279,6 +289,24 @@ def log_stab_callback(timestamp, data, logconf):
     #print('omega_roll:', omega_roll)
 
 
+bat_print_counter = 0
+vbat = 0.0
+battery_level = 0
+battery_state = 0
+
+
+def log_battery_callback(timestamp, data, logconf):
+    global bat_print_counter, vbat, battery_level, battery_state
+    # battery
+    vbat = data.get('pm.vbat', 'float') # V
+    battery_level = data.get('pm.batteryLevel', 'uint8_t') # %
+    battery_state = data.get('pm.state', 'int8_t')
+
+    bat_print_counter += 1
+    if bat_print_counter % 20 == 0:  # print every 2 s at 10 hz
+        print(f"vbat: {vbat:.2f} V, battery_level: {battery_level} %, battery_state: {battery_state}")
+
+
 def log_async(scf, logconf):
     cf = scf.cf
     cf.log.add_config(logconf)
@@ -286,6 +314,13 @@ def log_async(scf, logconf):
     logconf.start()
     #time.sleep(5)
     #logconf.stop()
+
+
+def log_battery_async(scf, logconf):
+    cf = scf.cf
+    cf.log.add_config(logconf)
+    logconf.data_received_cb.add_callback(log_battery_callback)
+    logconf.start()
 
 
 def init_direction_change_thread(scf, new_direction):
@@ -364,7 +399,8 @@ if __name__ == '__main__':
 
     data_saver = DataSave.SaveData('Data_time',
                                    'Monocopter_XYZ','rotational_state_vector','motor_cmd','ref_position','ref_velocity','motor_actual_cmd','cmd_bod_acc','yawrate',
-                                   'front_range','left_range','right_range','z_range','body_yaw','bod_angle_roll')
+                                   'front_range','left_range','right_range','z_range','body_yaw','bod_angle_roll','body_pitch',
+                                   'vbat','battery_level','battery_state')
                 
                                    
     logging.basicConfig(level=logging.ERROR)
@@ -544,6 +580,10 @@ if __name__ == '__main__':
         seq_args = swarm_exe(cmd_att)
         swarm.parallel(init_throttle, args_dict=seq_args)
         swarm.parallel(log_async, args_dict=seq_args_log) # only can log up to six items at a time
+        bat_log = battery_logging_config()
+        swarm_bat_log = np.array([bat_log])
+        seq_args_bat_log = swarm_logging(swarm_bat_log)
+        swarm.parallel(log_battery_async, args_dict=seq_args_bat_log)
 
         try:
             #while time_end > time.time():
@@ -748,7 +788,16 @@ if __name__ == '__main__':
                 loop_counter += 1
 
 
-                # collect data 
+                # collect data
+                # # test 1:
+                # if button1 == 0:
+                #     if stage == 'hover':
+
+                # # test 2:
+                # if button2 != 1:
+                #     if stage == 'manual':        
+
+                # test 3: 
                 if button1 == 1:
                     if stage == 'trajectory on':
                         x_error = ref_pos[0]-x_offset-linear_state_vector[0]
@@ -764,7 +813,8 @@ if __name__ == '__main__':
                         #            rmse_num,att_error,att_rate_error,att_raterate_error,yawrate)   
                         
                         data_saver.add_item(abs_time,linear_state_vector[0:6],rotational_state_vector,motor_cmd,ref_pos,ref_vel,motor_cmd,cmd_bod_acc,yawrate,
-                                            front_range,left_range,right_range,z_range,body_yaw,bod_angle_roll)
+                                            front_range,left_range,right_range,z_range,body_yaw,bod_angle_roll,body_pitch,
+                                            vbat,battery_level,battery_state)
 
                     
 
@@ -786,3 +836,27 @@ monoco_name = 'sensing_short'
 # save data
 #path = '/home/emmanuel/Docking-Swarm-Monocopter/sim_data/sensing_DFBC_' + monoco_name + chosen_traj + str(speedX*0.1) + '_ms'
 #data_saver.save_data(path)
+
+
+""" What to collect, most important first:
+
+1. Steady hover at a few throttles (needed first).
+
+Hold about 5–10 s of hover at roughly 40, 45, 50 and 55%. If it climbs or sinks, that's fine; just log it.
+Per segment, I need the spin rate, the steady pitch-up angle and the throttle. This sets SPIN_DRAG_C and BOOM_K, and later checks the BEMT model.
+2. Throttle steps (for the damping).
+
+In hover, step the throttle by about ±5% and log the transient.
+The spin-up/spin-down time constant checks yaw drag and inertia. The pitch overshoot and settling time set BOOM_C.
+3. Bench measurements (for the parameters the model depends on).
+
+Prop RPM at hover, from ESC telemetry or an optical tachometer. It sets the prop's angular momentum (precession strength) and checks the motor model. The sim currently gives about 1840 rad/s (≈17,600 rpm) at 47.5%.
+Thrust stand at every 10% of throttle, with RPM. The sim only has points at 0, 50 and 100%.
+Masses: the rotor bell (currently a 4 g guess) and the real craft's balance point. Hang or balance it to check the sim's CG of −234 mm along the boom.
+Optional spin-down test: put the craft on a vertical bearing, spin it up and cut the motor. The decay curve gives yaw drag versus spin rate directly, without having to fly.
+Logging notes.
+
+Keep the same 250 Hz mocap rigid body.
+Log the commanded throttle on the same timestamps.
+Log battery voltage if you can, since sag shifts thrust.
+Write down how each signal is defined (axes, units, sign convention). """
