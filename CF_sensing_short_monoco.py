@@ -275,11 +275,11 @@ def log_stab_callback(timestamp, data, logconf):
 
     
     log_print_counter += 1
-    if log_print_counter % 20 == 0:  # print every 10th sample
+    #if log_print_counter % 20 == 0:  # print every 10th sample
         #print('[%d][%s]: %s' % (timestamp, logconf.name, data))
         #print(f"gyro_x: {gyro_x:.4f} deg/s, r_roll: {r_roll:.4f} rad/s, omega_roll: {omega_roll:.4f} rad/s")
         #print(f"unfiltered_roll: {r_roll:.4f} rad/s, filtered_roll: {omega_roll:.4f} rad/s")
-        print(f"front_range: {front_range} mm, left_range: {left_range} mm, right_range: {right_range} mm, z_range: {z_range} mm")
+    #    print(f"front_range: {front_range} mm, left_range: {left_range} mm, right_range: {right_range} mm, z_range: {z_range} mm")
 
     
     # attitude rate rate (rad/s^2)
@@ -303,8 +303,8 @@ def log_battery_callback(timestamp, data, logconf):
     battery_state = data.get('pm.state', 'int8_t')
 
     bat_print_counter += 1
-    if bat_print_counter % 20 == 0:  # print every 2 s at 10 hz
-        print(f"vbat: {vbat:.2f} V, battery_level: {battery_level} %, battery_state: {battery_state}")
+    #if bat_print_counter % 20 == 0:  # print every 2 s at 10 hz
+    #    print(f"vbat: {vbat:.2f} V, battery_level: {battery_level} %, battery_state: {battery_state}")
 
 
 def log_async(scf, logconf):
@@ -473,7 +473,7 @@ if __name__ == '__main__':
 
 
     # cyclic xyz (position)
-    kp = [1.5,1.5,0.0] # 0.04
+    kp = [4.0,4.0,0.0] # 0.04
     kd = [0.0005,0.0005,0.0] # not in use
     ki = [10.0,10.0,0.0] 
 
@@ -484,7 +484,7 @@ if __name__ == '__main__':
 
     # cyclic xy (attitude) - heuristic gains thus far
     ka = [6000, 6000]  # 6000
-    kr = [2.0, 2.0] # 10
+    kr = [2.6, 2.6] # 10
     krr = [1.0, 1.0] # 1.0
    
 
@@ -566,6 +566,7 @@ if __name__ == '__main__':
     last_direction = 0
     time_delay = False
     filter = 1
+    sim_traj = ""
 
     with Swarm(uris, factory= CachedCfFactory(rw_cache='./cache')) as swarm:
         #swarm.reset_estimators()
@@ -764,7 +765,7 @@ if __name__ == '__main__':
                 swarm.parallel(arm_throttle, args_dict=seq_args)
 
 
-                """ if loop_counter % 10 == 0:
+                if loop_counter % 10 == 0:
                     print('cmd and button commands: ', motor_cmd, button0, button1)
                     #print('direction: ', a0, a1, manual_alt)
                     #print(f"stage: {stage}, ref_msg: {ref_msg}") 
@@ -774,10 +775,11 @@ if __name__ == '__main__':
                     #print('altitude: ', linear_state_vector[2])
                     #print('manual_cyclic_xyz: ', auto_cyclic)
                     #print('p_cyclic_xyz: ', monoco.p_control_signal)
-                    print(f"att_cmds: {cmd_bod_acc}, motor_cmd: {motor_cmd}")
+                    ##print(f"att_cmds: {cmd_bod_acc}, motor_cmd: {motor_cmd}")
                     #print('monoco.rates comparison: ', monoco.cmd_bod_rates_final, monoco.ref_rates)
                     #print('monoco.raterates comparison: ', monoco.cmd_bod_raterates_final, monoco.ref_raterates)
-                    #print('yawrate: ', yawrate) """
+                    #print('yawrate: ', yawrate)
+                    print('sim_traj', sim_traj)
 
                     #if dt > 0.0:
                     #    print('frequency (Hz) = ', 1/dt)
@@ -790,16 +792,16 @@ if __name__ == '__main__':
 
                 # collect data
                 # # test 1:
-                # if button1 == 0:
+                #if button1 == 0:
                 #     if stage == 'hover':
 
                 # # test 2:
-                # if button2 != 1:
-                #     if stage == 'manual':        
+                if button2 != 1:
+                    if stage == 'manual':        
 
                 # test 3: 
-                if button1 == 1:
-                    if stage == 'trajectory on':
+                #if button1 == 1:
+                #    if stage == 'trajectory on':
                         x_error = ref_pos[0]-x_offset-linear_state_vector[0]
                         y_error = ref_pos[1]-y_offset-linear_state_vector[1]
                         z_error = ref_pos[2]-z_offset-linear_state_vector[2]
@@ -816,6 +818,7 @@ if __name__ == '__main__':
                                             front_range,left_range,right_range,z_range,body_yaw,bod_angle_roll,body_pitch,
                                             vbat,battery_level,battery_state)
 
+                        sim_traj = stage
                     
 
         except KeyboardInterrupt:  
@@ -832,9 +835,10 @@ if __name__ == '__main__':
             
                     
 monoco_name = 'sensing_short'
+sim_traj = sim_traj
 
 # save data
-#path = '/home/emmanuel/Docking-Swarm-Monocopter/sim_data/sensing_DFBC_' + monoco_name + chosen_traj + str(speedX*0.1) + '_ms'
+#path = '/home/emmanuel/Docking-Swarm-Monocopter/sim_data/sensing_DFBC_' + monoco_name + "_" + sim_traj + chosen_traj + str(speedX*0.1) + '_ms'
 #data_saver.save_data(path)
 
 
